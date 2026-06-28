@@ -274,6 +274,17 @@ function MenuSection() {
                   </div>
                 ))}
               </div>
+              {s.footer && (
+                <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">
+                  {s.footer.map((f, i) => (
+                    <div key={i} className="font-serif">
+                      <span className="font-display text-fire mr-2">{f.label}:</span>
+                      <span className="text-muted-foreground">{f.values.join(", ")}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </TabsContent>
           ))}
         </Tabs>

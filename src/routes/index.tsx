@@ -20,8 +20,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted." },
       { property: "og:title", content: "Bad Manners Coffee" },
       { property: "og:description", content: "Goth-Barbie-punk coffee on Haywood Rd. Specialty espresso, seasonal drinks, pop-ups." },
-      { property: "og:image", content: PHOTOS.heroInterior },
-      { name: "twitter:image", content: PHOTOS.heroInterior },
+      { property: "og:image", content: FALLBACK_PHOTOS.heroInterior },
+      { name: "twitter:image", content: FALLBACK_PHOTOS.heroInterior },
     ],
   }),
   component: Home,
@@ -29,18 +29,20 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   useReveal();
+  const content = useSiteContent();
+  const { photos: PHOTOS, menu: MENU, info: INFO, hours: HOURS } = content;
   return (
     <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
       <BgFlourishes />
       <Nav />
-      <Hero />
-      <Story />
-      <MenuSection />
-      <Gallery />
-      <Community />
-      <Visit />
-      <GiftAndCatering />
-      <Footer />
+      <Hero photos={PHOTOS} />
+      <Story photos={PHOTOS} />
+      <MenuSection menu={MENU} />
+      <Gallery photos={PHOTOS} />
+      <Community photos={PHOTOS} />
+      <Visit info={INFO} hours={HOURS} />
+      <GiftAndCatering info={INFO} />
+      <Footer info={INFO} />
       <Toaster richColors position="top-center" />
     </div>
   );

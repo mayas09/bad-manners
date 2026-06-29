@@ -357,14 +357,15 @@ function Community({ photos: PHOTOS }: { photos: SiteImages }) {
 
 /* --------------------------------- visit --------------------------------- */
 
-function Visit() {
+function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
+  const mapQ = encodeURIComponent(info.map_query);
   return (
     <section id="visit" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--fire-to) 8%, transparent), transparent)" }}>
       <div className="mx-auto max-w-7xl px-4">
         <div className="reveal text-center">
           <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">Visit us</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl">
-            697 Haywood Rd, <span className="text-fire">Suite G</span>
+            {info.address_line1.split(",")[0]}, <span className="text-fire">{info.address_line1.split(",").slice(1).join(",").trim() || "Suite G"}</span>
           </h2>
         </div>
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
@@ -373,10 +374,10 @@ function Visit() {
               <MapPin className="size-6 text-[--pink-deep] mt-1" />
               <div>
                 <p className="font-display text-xl">Address</p>
-                <p className="mt-1 text-muted-foreground">697 Haywood Rd, Suite G<br />Asheville, NC 28806</p>
+                <p className="mt-1 text-muted-foreground">{info.address_line1}<br />{info.address_line2}</p>
                 <a
                   className="mt-2 inline-block text-sm font-medium text-[--pink-deep] underline decoration-dotted underline-offset-4"
-                  href="https://maps.google.com/?q=697+Haywood+Rd+G+Asheville+NC+28806"
+                  href={`https://maps.google.com/?q=${mapQ}`}
                   target="_blank" rel="noreferrer"
                 >
                   Open in Google Maps →
@@ -388,8 +389,7 @@ function Visit() {
               <div className="w-full">
                 <p className="font-display text-xl">Hours</p>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-muted-foreground">
-                  <dt>Mon – Fri</dt><dd>8:00 AM – 3:00 PM</dd>
-                  <dt>Sat – Sun</dt><dd>8:30 AM – 3:00 PM</dd>
+                  {hours.map((h, i) => (<><dt key={`l${i}`}>{h.label}</dt><dd key={`v${i}`}>{h.hours_text}</dd></>))}
                 </dl>
               </div>
             </div>
@@ -404,7 +404,7 @@ function Visit() {
           <div className="reveal relative overflow-hidden rounded-3xl ring-1 ring-[--pink]/30 min-h-[420px] tilt-card">
             <iframe
               title="Bad Manners Coffee map"
-              src="https://www.google.com/maps?q=697+Haywood+Rd+G+Asheville+NC+28806&output=embed"
+              src={`https://www.google.com/maps?q=${mapQ}&output=embed`}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="absolute inset-0 h-full w-full"
@@ -413,6 +413,108 @@ function Visit() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ------------------------- gift cards + catering ------------------------- */
+
+function GiftAndCatering({ info }: { info: SiteInfo }) {
+  return (
+    <section id="catering" className="mx-auto max-w-7xl px-4 py-24 sm:py-32 grid gap-12 lg:grid-cols-2">
+      <div className="reveal relative overflow-hidden rounded-3xl bg-fire p-10 text-white tilt-card">
+        <div className="absolute -right-12 -top-12 opacity-25 spin-slow">
+          <Star className="size-64" />
+        </div>
+        <Gift className="size-10" />
+        <h3 className="mt-4 font-display text-4xl">Gift Cards</h3>
+        <p className="mt-3 max-w-md text-white/90 font-serif text-lg">
+          Caffeinate someone you love (or owe). Digital and physical cards available
+          through our Square store.
+        </p>
+        <Button asChild size="lg" variant="secondary" className="mt-6 bg-white text-[--pink-deep] hover:bg-white/90">
+          <a href={info.gift_card_url} target="_blank" rel="noreferrer">
+            Buy a gift card →
+          </a>
+        </Button>
+      </div>
+
+      <div className="reveal">
+        <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">Catering & events</span>
+        <h3 className="mt-3 font-display text-4xl">Bring us to your thing.</h3>
+        <p className="mt-3 text-muted-foreground font-serif text-lg">
+          Weddings, markets, office mornings, weird-art openings — tell us what you're
+          planning and we'll get back with a quote.
+        </p>
+        <div className="mt-6">
+          <CateringForm />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------------- footer --------------------------------- */
+
+function Footer({ info }: { info: SiteInfo }) {
+  return (
+    <footer className="relative mt-16 border-t border-[--pink]/20">
+      <div className="mx-auto max-w-7xl px-4 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-[--pink]/40" />
+            <span className="font-display text-2xl">Bad <span className="text-fire">Manners</span></span>
+          </Link>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Independent coffee shop in West Asheville. Pink walls, dialed espresso,
+            community-first.
+          </p>
+        </div>
+        <div>
+          <p className="font-display text-lg">Explore</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li><a href="#story" className="hover:text-[--pink-deep]">Our Story</a></li>
+            <li><a href="#menu" className="hover:text-[--pink-deep]">Menu</a></li>
+            <li><a href="#community" className="hover:text-[--pink-deep]">Community</a></li>
+            <li><a href="#visit" className="hover:text-[--pink-deep]">Visit</a></li>
+            <li><a href="#catering" className="hover:text-[--pink-deep]">Catering</a></li>
+          </ul>
+        </div>
+        <div>
+          <p className="font-display text-lg">Follow</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>
+              <a href={info.instagram_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+                <Instagram className="size-4" /> Instagram
+              </a>
+            </li>
+            <li>
+              <a href={info.facebook_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+                <Facebook className="size-4" /> Facebook
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p className="font-display text-lg">Press</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>
+              <a href="https://carolinas.eater.com/" target="_blank" rel="noreferrer" className="hover:text-[--pink-deep]">
+                "Goth Barbie-punk" — Eater Carolinas
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="border-t border-[--pink]/15">
+        <div className="mx-auto max-w-7xl px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <p>© {new Date().getFullYear()} Bad Manners Coffee. All rights reserved.</p>
+          <p className="flex items-center gap-4">
+            <Link to="/admin/login" className="hover:text-[--pink-deep]">Admin</Link>
+            <span className="font-display">Be kind. Be a little bad.</span>
+          </p>
+        </div>
+      </div>
+    </footer>
   );
 }
 

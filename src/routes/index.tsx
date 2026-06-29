@@ -389,7 +389,7 @@ function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
               <div className="w-full">
                 <p className="font-display text-xl">Hours</p>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-muted-foreground">
-                  {hours.map((h, i) => (<><dt key={`l${i}`}>{h.label}</dt><dd key={`v${i}`}>{h.hours_text}</dd></>))}
+                  {hours.flatMap((h, i) => [<dt key={`l${i}`}>{h.label}</dt>, <dd key={`v${i}`}>{h.hours_text}</dd>])}
                 </dl>
               </div>
             </div>

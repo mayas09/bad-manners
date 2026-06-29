@@ -8,10 +8,10 @@ import {
   Sparkles, Gift, Menu as MenuIcon, X,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
-import { MENU } from "@/components/site/menu-data";
-import { PHOTOS } from "@/components/site/photos";
+import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
 import { useReveal } from "@/components/site/use-reveal";
 import { CateringForm } from "@/components/site/CateringForm";
+import { useSiteContent } from "@/components/site/use-site-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,8 +20,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted." },
       { property: "og:title", content: "Bad Manners Coffee" },
       { property: "og:description", content: "Goth-Barbie-punk coffee on Haywood Rd. Specialty espresso, seasonal drinks, pop-ups." },
-      { property: "og:image", content: PHOTOS.heroInterior },
-      { name: "twitter:image", content: PHOTOS.heroInterior },
+      { property: "og:image", content: FALLBACK_PHOTOS.heroInterior },
+      { name: "twitter:image", content: FALLBACK_PHOTOS.heroInterior },
     ],
   }),
   component: Home,
@@ -29,18 +29,20 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   useReveal();
+  const content = useSiteContent();
+  const { photos: PHOTOS, menu: MENU, info: INFO, hours: HOURS } = content;
   return (
     <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
       <BgFlourishes />
       <Nav />
-      <Hero />
-      <Story />
-      <MenuSection />
-      <Gallery />
-      <Community />
-      <Visit />
-      <GiftAndCatering />
-      <Footer />
+      <Hero photos={PHOTOS} />
+      <Story photos={PHOTOS} />
+      <MenuSection menu={MENU} />
+      <Gallery photos={PHOTOS} />
+      <Community photos={PHOTOS} />
+      <Visit info={INFO} hours={HOURS} />
+      <GiftAndCatering info={INFO} />
+      <Footer info={INFO} />
       <Toaster richColors position="top-center" />
     </div>
   );
@@ -116,7 +118,11 @@ function Nav() {
 
 /* --------------------------------- hero --------------------------------- */
 
-function Hero() {
+type SiteImages = typeof FALLBACK_PHOTOS;
+type SiteInfo = { address_line1: string; address_line2: string; instagram_url: string; facebook_url: string; gift_card_url: string; map_query: string };
+type SiteHours = { label: string; hours_text: string }[];
+
+function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section id="top" className="relative grain isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -187,7 +193,7 @@ function Star({ className = "" }: { className?: string }) {
 
 /* --------------------------------- story --------------------------------- */
 
-function Story() {
+function Story({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section id="story" className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32">
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
@@ -231,7 +237,7 @@ function Story() {
 
 /* --------------------------------- menu --------------------------------- */
 
-function MenuSection() {
+function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data").MenuSection[] }) {
   return (
     <section id="menu" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)" }}>
       <div className="mx-auto max-w-7xl px-4">
@@ -295,7 +301,7 @@ function MenuSection() {
 
 /* --------------------------------- gallery --------------------------------- */
 
-function Gallery() {
+function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-20">
       <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
@@ -311,7 +317,7 @@ function Gallery() {
 
 /* --------------------------------- community --------------------------------- */
 
-function Community() {
+function Community({ photos: PHOTOS }: { photos: SiteImages }) {
   const cards = [
     { icon: PawPrint, title: "Dog-friendly", body: "Patio pups always welcome. Pup cups on the house." },
     { icon: Heart, title: "Mutual aid", body: "We contribute to local mutual-aid funds and host benefit days for neighbors in need." },
@@ -351,14 +357,15 @@ function Community() {
 
 /* --------------------------------- visit --------------------------------- */
 
-function Visit() {
+function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
+  const mapQ = encodeURIComponent(info.map_query);
   return (
     <section id="visit" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--fire-to) 8%, transparent), transparent)" }}>
       <div className="mx-auto max-w-7xl px-4">
         <div className="reveal text-center">
           <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">Visit us</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl">
-            697 Haywood Rd, <span className="text-fire">Suite G</span>
+            {info.address_line1.split(",")[0]}, <span className="text-fire">{info.address_line1.split(",").slice(1).join(",").trim() || "Suite G"}</span>
           </h2>
         </div>
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
@@ -367,10 +374,10 @@ function Visit() {
               <MapPin className="size-6 text-[--pink-deep] mt-1" />
               <div>
                 <p className="font-display text-xl">Address</p>
-                <p className="mt-1 text-muted-foreground">697 Haywood Rd, Suite G<br />Asheville, NC 28806</p>
+                <p className="mt-1 text-muted-foreground">{info.address_line1}<br />{info.address_line2}</p>
                 <a
                   className="mt-2 inline-block text-sm font-medium text-[--pink-deep] underline decoration-dotted underline-offset-4"
-                  href="https://maps.google.com/?q=697+Haywood+Rd+G+Asheville+NC+28806"
+                  href={`https://maps.google.com/?q=${mapQ}`}
                   target="_blank" rel="noreferrer"
                 >
                   Open in Google Maps →
@@ -382,8 +389,7 @@ function Visit() {
               <div className="w-full">
                 <p className="font-display text-xl">Hours</p>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-muted-foreground">
-                  <dt>Mon – Fri</dt><dd>8:00 AM – 3:00 PM</dd>
-                  <dt>Sat – Sun</dt><dd>8:30 AM – 3:00 PM</dd>
+                  {hours.flatMap((h, i) => [<dt key={`l${i}`}>{h.label}</dt>, <dd key={`v${i}`}>{h.hours_text}</dd>])}
                 </dl>
               </div>
             </div>
@@ -398,7 +404,7 @@ function Visit() {
           <div className="reveal relative overflow-hidden rounded-3xl ring-1 ring-[--pink]/30 min-h-[420px] tilt-card">
             <iframe
               title="Bad Manners Coffee map"
-              src="https://www.google.com/maps?q=697+Haywood+Rd+G+Asheville+NC+28806&output=embed"
+              src={`https://www.google.com/maps?q=${mapQ}&output=embed`}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="absolute inset-0 h-full w-full"
@@ -412,7 +418,7 @@ function Visit() {
 
 /* ------------------------- gift cards + catering ------------------------- */
 
-function GiftAndCatering() {
+function GiftAndCatering({ info }: { info: SiteInfo }) {
   return (
     <section id="catering" className="mx-auto max-w-7xl px-4 py-24 sm:py-32 grid gap-12 lg:grid-cols-2">
       <div className="reveal relative overflow-hidden rounded-3xl bg-fire p-10 text-white tilt-card">
@@ -426,7 +432,7 @@ function GiftAndCatering() {
           through our Square store.
         </p>
         <Button asChild size="lg" variant="secondary" className="mt-6 bg-white text-[--pink-deep] hover:bg-white/90">
-          <a href="https://squareup.com/gift/bad-manners-coffee/order" target="_blank" rel="noreferrer">
+          <a href={info.gift_card_url} target="_blank" rel="noreferrer">
             Buy a gift card →
           </a>
         </Button>
@@ -449,7 +455,7 @@ function GiftAndCatering() {
 
 /* --------------------------------- footer --------------------------------- */
 
-function Footer() {
+function Footer({ info }: { info: SiteInfo }) {
   return (
     <footer className="relative mt-16 border-t border-[--pink]/20">
       <div className="mx-auto max-w-7xl px-4 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
@@ -477,12 +483,12 @@ function Footer() {
           <p className="font-display text-lg">Follow</p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <a href="https://instagram.com/badmannerscoffee" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+              <a href={info.instagram_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
                 <Instagram className="size-4" /> Instagram
               </a>
             </li>
             <li>
-              <a href="https://facebook.com/badmannerscoffee" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+              <a href={info.facebook_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
                 <Facebook className="size-4" /> Facebook
               </a>
             </li>
@@ -502,7 +508,10 @@ function Footer() {
       <div className="border-t border-[--pink]/15">
         <div className="mx-auto max-w-7xl px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Bad Manners Coffee. All rights reserved.</p>
-          <p className="font-display">Be kind. Be a little bad.</p>
+          <p className="flex items-center gap-4">
+            <Link to="/admin/login" className="hover:text-[--pink-deep]">Admin</Link>
+            <span className="font-display">Be kind. Be a little bad.</span>
+          </p>
         </div>
       </div>
     </footer>

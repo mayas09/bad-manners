@@ -118,7 +118,11 @@ function Nav() {
 
 /* --------------------------------- hero --------------------------------- */
 
-function Hero() {
+type SiteImages = typeof FALLBACK_PHOTOS;
+type SiteInfo = { address_line1: string; address_line2: string; instagram_url: string; facebook_url: string; gift_card_url: string; map_query: string };
+type SiteHours = { label: string; hours_text: string }[];
+
+function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section id="top" className="relative grain isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">

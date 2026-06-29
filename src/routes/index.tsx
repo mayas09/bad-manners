@@ -8,10 +8,10 @@ import {
   Sparkles, Gift, Menu as MenuIcon, X,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
-import { MENU } from "@/components/site/menu-data";
-import { PHOTOS } from "@/components/site/photos";
+import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
 import { useReveal } from "@/components/site/use-reveal";
 import { CateringForm } from "@/components/site/CateringForm";
+import { useSiteContent } from "@/components/site/use-site-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({

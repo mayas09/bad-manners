@@ -193,7 +193,7 @@ function Star({ className = "" }: { className?: string }) {
 
 /* --------------------------------- story --------------------------------- */
 
-function Story() {
+function Story({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section id="story" className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32">
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
@@ -237,7 +237,7 @@ function Story() {
 
 /* --------------------------------- menu --------------------------------- */
 
-function MenuSection() {
+function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data").MenuSection[] }) {
   return (
     <section id="menu" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)" }}>
       <div className="mx-auto max-w-7xl px-4">
@@ -301,7 +301,7 @@ function MenuSection() {
 
 /* --------------------------------- gallery --------------------------------- */
 
-function Gallery() {
+function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-20">
       <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
@@ -317,7 +317,7 @@ function Gallery() {
 
 /* --------------------------------- community --------------------------------- */
 
-function Community() {
+function Community({ photos: PHOTOS }: { photos: SiteImages }) {
   const cards = [
     { icon: PawPrint, title: "Dog-friendly", body: "Patio pups always welcome. Pup cups on the house." },
     { icon: Heart, title: "Mutual aid", body: "We contribute to local mutual-aid funds and host benefit days for neighbors in need." },

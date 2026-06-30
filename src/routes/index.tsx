@@ -269,13 +269,20 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
               {s.blurb && <p className="text-center font-serif italic text-muted-foreground mb-8">{s.blurb}</p>}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.items.map((item, i) => (
-                  <div key={i} className="tilt-card glass rounded-2xl p-5 flex items-start justify-between gap-4">
+                  <div key={i} className={`tilt-card glass rounded-2xl p-5 flex items-start justify-between gap-4 ${item.is_sold_out ? "opacity-70" : ""}`}>
                     <div>
-                      <h3 className="font-display text-xl leading-tight">{item.name}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-display text-xl leading-tight">{item.name}</h3>
+                        {item.is_sold_out && (
+                          <span className="inline-flex items-center rounded-full border border-[--pink-deep] bg-[--pink-deep]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[--pink-deep]">
+                            Sold Out
+                          </span>
+                        )}
+                      </div>
                       {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
                     </div>
                     {item.price && (
-                      <span className="font-display text-lg text-fire whitespace-nowrap">{item.price}</span>
+                      <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
                     )}
                   </div>
                 ))}

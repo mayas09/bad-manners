@@ -7,6 +7,13 @@ export type AdminAuthState = {
   isAdmin: boolean;
 };
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const LAST_ACTIVITY_KEY = "bm_admin_last_activity";
+
+function markActivity() {
+  try { localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch {}
+}
+
 export function useAdminAuth(): AdminAuthState {
   const [state, setState] = useState<AdminAuthState>({ loading: true, user: null, isAdmin: false });
 
@@ -27,23 +34,54 @@ export function useAdminAuth(): AdminAuthState {
       if (!cancelled) setState({ loading: false, user: { id: userId, email }, isAdmin: !!data });
     }
 
+    // Check idle timeout on mount
+    try {
+      const last = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+      if (last && Date.now() - last > IDLE_TIMEOUT_MS) {
+        supabase.auth.signOut().finally(() => {
+          localStorage.removeItem(LAST_ACTIVITY_KEY);
+          if (!cancelled) setState({ loading: false, user: null, isAdmin: false });
+        });
+        return;
+      }
+    } catch {}
+
     supabase.auth.getUser().then(({ data }) => {
+      if (data.user) markActivity();
       load(data.user?.id ?? null, data.user?.email ?? null);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        try { localStorage.removeItem(LAST_ACTIVITY_KEY); } catch {}
         if (!cancelled) setState({ loading: false, user: null, isAdmin: false });
         return;
       }
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        markActivity();
         load(session?.user?.id ?? null, session?.user?.email ?? null);
       }
     });
 
+    // Activity tracking + idle check every minute
+    const onActivity = () => markActivity();
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+
+    const interval = window.setInterval(() => {
+      try {
+        const last = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+        if (last && Date.now() - last > IDLE_TIMEOUT_MS) {
+          supabase.auth.signOut();
+        }
+      } catch {}
+    }, 60 * 1000);
+
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
+      events.forEach((e) => window.removeEventListener(e, onActivity));
+      window.clearInterval(interval);
     };
   }, []);
 

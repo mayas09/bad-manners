@@ -1,0 +1,147 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Plus, Trash2, Save, Eye, MapPin, Instagram, Facebook, Gift, Clock } from "lucide-react";
+
+export const Route = createFileRoute("/admin/info")({
+  component: InfoPage,
+});
+
+const INFO_FIELDS: { key: string; label: string }[] = [
+  { key: "address_line1", label: "Address line 1" },
+  { key: "address_line2", label: "Address line 2" },
+  { key: "instagram_url", label: "Instagram URL" },
+  { key: "facebook_url", label: "Facebook URL" },
+  { key: "gift_card_url", label: "Gift card store URL" },
+  { key: "map_query", label: "Map search query" },
+];
+
+type HourRow = { id: string; label: string; hours_text: string; sort_order: number };
+
+function InfoPage() {
+  const [info, setInfo] = useState<Record<string, string>>({});
+  const [hours, setHours] = useState<HourRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const [infoRes, hoursRes] = await Promise.all([
+      supabase.from("business_info").select("*"),
+      supabase.from("business_hours").select("*").order("sort_order"),
+    ]);
+    const map: Record<string, string> = {};
+    (infoRes.data ?? []).forEach((r: any) => { map[r.key] = r.value ?? ""; });
+    setInfo(map);
+    setHours((hoursRes.data ?? []) as HourRow[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function saveInfo() {
+    const rows = INFO_FIELDS.map((f) => ({ key: f.key, value: info[f.key] ?? "" }));
+    const { error } = await supabase.from("business_info").upsert(rows, { onConflict: "key" });
+    if (error) return toast.error(error.message);
+    toast.success("Info saved");
+  }
+
+  async function addHourRow() {
+    const sort = hours.reduce((m, h) => Math.max(m, h.sort_order), 0) + 1;
+    const { error } = await supabase.from("business_hours").insert({ label: "Day", hours_text: "9:00 AM – 5:00 PM", sort_order: sort });
+    if (error) return toast.error(error.message);
+    load();
+  }
+  async function saveHour(h: HourRow) {
+    const { error } = await supabase.from("business_hours").update({ label: h.label, hours_text: h.hours_text, sort_order: h.sort_order }).eq("id", h.id);
+    if (error) return toast.error(error.message);
+    toast.success("Saved");
+  }
+  async function deleteHour(id: string) {
+    if (!confirm("Delete this row?")) return;
+    const { error } = await supabase.from("business_hours").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setHours((hs) => hs.filter((h) => h.id !== id));
+  }
+
+  if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Business info</h1>
+          <p className="text-sm text-slate-500">Hours, address, social links, and gift card URL.</p>
+        </div>
+        <Button variant="outline" onClick={() => setPreviewOpen(true)}>
+          <Eye className="size-4 mr-1.5" /> Preview changes
+        </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="text-base font-semibold text-slate-900">Business info</h2>
+          <div className="mt-4 grid gap-3">
+            {INFO_FIELDS.map((f) => (
+              <div key={f.key} className="grid gap-1.5">
+                <Label htmlFor={f.key} className="text-xs text-slate-600">{f.label}</Label>
+                <Input id={f.key} value={info[f.key] ?? ""} onChange={(e) => setInfo((s) => ({ ...s, [f.key]: e.target.value }))} />
+              </div>
+            ))}
+            <Button onClick={saveInfo} className="mt-2"><Save className="size-4 mr-1.5" /> Save info</Button>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-900">Hours</h2>
+            <Button size="sm" variant="outline" onClick={addHourRow}><Plus className="size-4 mr-1" /> Add</Button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {hours.map((h) => (
+              <div key={h.id} className="grid grid-cols-12 gap-2 items-center">
+                <Input className="col-span-4" value={h.label} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, label: e.target.value } : x))} />
+                <Input className="col-span-5" value={h.hours_text} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, hours_text: e.target.value } : x))} />
+                <Input className="col-span-1" type="number" value={h.sort_order} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, sort_order: Number(e.target.value) } : x))} />
+                <div className="col-span-2 flex gap-1 justify-end">
+                  <Button size="icon" variant="outline" onClick={() => saveHour(h)}><Save className="size-4" /></Button>
+                  <Button size="icon" variant="outline" onClick={() => deleteHour(h.id)}><Trash2 className="size-4 text-red-500" /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Preview — Visit Us section</DialogTitle>
+          </DialogHeader>
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-pink-50 to-orange-50 p-6 text-slate-900">
+            <p className="text-xs uppercase tracking-[0.3em] text-pink-700">Visit Us</p>
+            <h3 className="mt-2 font-serif text-2xl">Come hang out.</h3>
+            <div className="mt-5 grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <p className="flex items-start gap-2"><MapPin className="size-4 mt-0.5 text-pink-700" /><span>{info.address_line1}<br/>{info.address_line2}</span></p>
+                <p className="flex items-start gap-2"><Clock className="size-4 mt-0.5 text-pink-700" /><span>
+                  {hours.map((h) => (<span key={h.id} className="block"><strong>{h.label}:</strong> {h.hours_text}</span>))}
+                </span></p>
+              </div>
+              <div className="space-y-2">
+                <p className="flex items-center gap-2"><Instagram className="size-4 text-pink-700" /> <a href={info.instagram_url} target="_blank" rel="noreferrer" className="underline truncate">{info.instagram_url || "—"}</a></p>
+                <p className="flex items-center gap-2"><Facebook className="size-4 text-pink-700" /> <a href={info.facebook_url} target="_blank" rel="noreferrer" className="underline truncate">{info.facebook_url || "—"}</a></p>
+                <p className="flex items-center gap-2"><Gift className="size-4 text-pink-700" /> <a href={info.gift_card_url} target="_blank" rel="noreferrer" className="underline truncate">{info.gift_card_url || "—"}</a></p>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">This is how the new info will appear once saved. Map uses search: <em>{info.map_query || "—"}</em></p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

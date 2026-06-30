@@ -75,7 +75,7 @@ export function useSiteContent(): SiteContent {
         }
         m.data.forEach((r: any) => {
           if (!byId[r.section]) byId[r.section] = { id: r.section, title: r.section, items: [] };
-          byId[r.section].items.push({ name: r.name, price: r.price ?? undefined, note: r.note ?? undefined });
+          byId[r.section].items.push({ name: r.name, price: r.price ?? undefined, note: r.note ?? undefined, is_sold_out: !!r.is_sold_out });
         });
         menu = Object.values(byId).filter((s) => s.items.length > 0);
       }

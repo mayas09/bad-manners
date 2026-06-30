@@ -97,6 +97,7 @@ export type Database = {
           created_at: string
           id: string
           is_gf_v: boolean
+          is_sold_out: boolean
           name: string
           note: string | null
           price: string | null
@@ -108,6 +109,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_gf_v?: boolean
+          is_sold_out?: boolean
           name: string
           note?: string | null
           price?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_gf_v?: boolean
+          is_sold_out?: boolean
           name?: string
           note?: string | null
           price?: string | null

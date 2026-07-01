@@ -250,6 +250,21 @@ function Story({ photos: PHOTOS }: { photos: SiteImages }) {
 
 /* --------------------------------- menu --------------------------------- */
 
+function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; cents: number }) {
+  const cart = useCart();
+  return (
+    <button
+      onClick={() => {
+        cart.add({ id: item.id ? `menu:${item.id}` : `name:${item.name}`, name: item.name, unit_price_cents: cents });
+        toast.success(`${item.name} added — ${formatCents(cents)}`, { duration: 1600 });
+      }}
+      className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-[--pink]/40 bg-white/60 hover:bg-fire hover:text-white hover:border-transparent px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+    >
+      <Plus className="size-3.5" /> Add to cart
+    </button>
+  );
+}
+
 function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data").MenuSection[] }) {
   return (
     <section id="menu" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)" }}>

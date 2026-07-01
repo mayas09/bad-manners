@@ -1,4 +1,4 @@
-export type MenuItem = { name: string; price?: string; note?: string; is_sold_out?: boolean };
+export type MenuItem = { id?: string; name: string; price?: string; note?: string; is_sold_out?: boolean };
 export type MenuSection = {
   id: string;
   title: string;

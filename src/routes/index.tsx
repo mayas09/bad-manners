@@ -105,13 +105,17 @@ function Nav() {
                 {l.label}
               </a>
             ))}
+            <AccountNav />
             <Button asChild className="bg-fire text-white hover:opacity-95">
               <a href="#visit"><MapPin className="mr-1.5 size-4" />Find Us</a>
             </Button>
           </nav>
-          <button className="md:hidden p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
-            {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
-          </button>
+          <div className="md:hidden flex items-center gap-1">
+            <AccountNav />
+            <button className="p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
+              {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
+            </button>
+          </div>
         </div>
         {open && (
           <div className="md:hidden mt-2 glass rounded-2xl p-4 grid gap-3">
@@ -277,24 +281,31 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
             <TabsContent key={s.id} value={s.id} className="mt-10">
               {s.blurb && <p className="text-center font-serif italic text-muted-foreground mb-8">{s.blurb}</p>}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {s.items.map((item, i) => (
-                  <div key={i} className={`tilt-card glass rounded-2xl p-5 flex items-start justify-between gap-4 ${item.is_sold_out ? "opacity-70" : ""}`}>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-display text-xl leading-tight">{item.name}</h3>
-                        {item.is_sold_out && (
-                          <span className="inline-flex items-center rounded-full border border-[--pink-deep] bg-[--pink-deep]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[--pink-deep]">
-                            Sold Out
-                          </span>
+                {s.items.map((item, i) => {
+                  const cents = parsePriceToCents(item.price);
+                  const canOrder = !!cents && !item.is_sold_out;
+                  return (
+                    <div key={item.id ?? i} className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 ${item.is_sold_out ? "opacity-70" : ""}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-display text-xl leading-tight">{item.name}</h3>
+                            {item.is_sold_out && (
+                              <span className="inline-flex items-center rounded-full border border-[--pink-deep] bg-[--pink-deep]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[--pink-deep]">
+                                Sold Out
+                              </span>
+                            )}
+                          </div>
+                          {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
+                        </div>
+                        {item.price && (
+                          <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
                         )}
                       </div>
-                      {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
+                      {canOrder && <AddToCartBtn item={item} cents={cents!} />}
                     </div>
-                    {item.price && (
-                      <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {s.footer && (
                 <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">

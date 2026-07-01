@@ -9,19 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AccountIndexRouteImport } from './routes/account.index'
+import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
 import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
 import { Route as AdminPhotosRouteImport } from './routes/admin.photos'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
+import { Route as AccountSignupRouteImport } from './routes/account.signup'
+import { Route as AccountLoginRouteImport } from './routes/account.login'
 
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -33,6 +49,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const OrderOrderIdRoute = OrderOrderIdRouteImport.update({
+  id: '/order/$orderId',
+  path: '/order/$orderId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -64,87 +90,148 @@ const AdminInfoRoute = AdminInfoRouteImport.update({
   path: '/info',
   getParentRoute: () => AdminRoute,
 } as any)
+const AccountSignupRoute = AccountSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountLoginRoute = AccountLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/checkout': typeof CheckoutRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/order/$orderId': typeof OrderOrderIdRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/checkout': typeof CheckoutRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/order/$orderId': typeof OrderOrderIdRoute
+  '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/checkout': typeof CheckoutRoute
+  '/account/login': typeof AccountLoginRoute
+  '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/admin/reset-password': typeof AdminResetPasswordRoute
+  '/order/$orderId': typeof OrderOrderIdRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/admin'
+    | '/checkout'
+    | '/account/login'
+    | '/account/signup'
     | '/admin/info'
     | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
     | '/admin/reset-password'
+    | '/order/$orderId'
+    | '/account/'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/checkout'
+    | '/account/login'
+    | '/account/signup'
     | '/admin/info'
     | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
     | '/admin/reset-password'
+    | '/order/$orderId'
+    | '/account'
     | '/admin'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/admin'
+    | '/checkout'
+    | '/account/login'
+    | '/account/signup'
     | '/admin/info'
     | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
     | '/admin/reset-password'
+    | '/order/$orderId'
+    | '/account/'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  CheckoutRoute: typeof CheckoutRoute
+  OrderOrderIdRoute: typeof OrderOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -160,6 +247,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/account/': {
+      id: '/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/order/$orderId': {
+      id: '/order/$orderId'
+      path: '/order/$orderId'
+      fullPath: '/order/$orderId'
+      preLoaderRoute: typeof OrderOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/reset-password': {
       id: '/admin/reset-password'
@@ -203,8 +304,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInfoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/account/signup': {
+      id: '/account/signup'
+      path: '/signup'
+      fullPath: '/account/signup'
+      preLoaderRoute: typeof AccountSignupRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/login': {
+      id: '/account/login'
+      path: '/login'
+      fullPath: '/account/login'
+      preLoaderRoute: typeof AccountLoginRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
+
+interface AccountRouteChildren {
+  AccountLoginRoute: typeof AccountLoginRoute
+  AccountSignupRoute: typeof AccountSignupRoute
+  AccountIndexRoute: typeof AccountIndexRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountLoginRoute: AccountLoginRoute,
+  AccountSignupRoute: AccountSignupRoute,
+  AccountIndexRoute: AccountIndexRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
 
 interface AdminRouteChildren {
   AdminInfoRoute: typeof AdminInfoRoute
@@ -230,7 +360,10 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  CheckoutRoute: CheckoutRoute,
+  OrderOrderIdRoute: OrderOrderIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

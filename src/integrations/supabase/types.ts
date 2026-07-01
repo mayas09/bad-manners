@@ -101,6 +101,7 @@ export type Database = {
           name: string
           note: string | null
           price: string | null
+          price_cents: number | null
           section: string
           sort_order: number
           updated_at: string
@@ -113,6 +114,7 @@ export type Database = {
           name: string
           note?: string | null
           price?: string | null
+          price_cents?: number | null
           section: string
           sort_order?: number
           updated_at?: string
@@ -125,8 +127,141 @@ export type Database = {
           name?: string
           note?: string | null
           price?: string | null
+          price_cents?: number | null
           section?: string
           sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          name: string
+          order_id: string
+          quantity: number
+          special_notes: string | null
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name: string
+          order_id: string
+          quantity?: number
+          special_notes?: string | null
+          unit_price_cents?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name?: string
+          order_id?: string
+          quantity?: number
+          special_notes?: string | null
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          order_notes: string | null
+          order_number: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_time: string
+          status: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          subtotal_cents: number
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          order_notes?: string | null
+          order_number?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_time: string
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          subtotal_cents?: number
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          order_notes?: string | null
+          order_number?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_time?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          subtotal_cents?: number
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -197,6 +332,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "ready"
+        | "picked_up"
+        | "cancelled"
+      payment_status: "unpaid" | "paid" | "refunded" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -325,6 +467,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      order_status: ["pending", "confirmed", "ready", "picked_up", "cancelled"],
+      payment_status: ["unpaid", "paid", "refunded", "failed"],
     },
   },
 } as const

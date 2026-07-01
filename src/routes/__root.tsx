@@ -77,18 +77,38 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bad Manners" },
-      { name: "description", content: "A modern website for Bad Manners Coffee, showcasing their unique brand and menu." },
+      { title: "Bad Manners Coffee | West Asheville, NC" },
+      {
+        name: "description",
+        content:
+          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+      },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Bad Manners" },
-      { property: "og:description", content: "A modern website for Bad Manners Coffee, showcasing their unique brand and menu." },
+      { property: "og:title", content: "Bad Manners Coffee | West Asheville, NC" },
+      {
+        property: "og:description",
+        content:
+          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Bad Manners" },
-      { name: "twitter:description", content: "A modern website for Bad Manners Coffee, showcasing their unique brand and menu." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/QZxkAb7UNWY9XnCDND0o23hG4Ej1/social-images/social-1782577650726-2026-06-27_17.26.55.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/QZxkAb7UNWY9XnCDND0o23hG4Ej1/social-images/social-1782577650726-2026-06-27_17.26.55.webp" },
+      { name: "twitter:title", content: "Bad Manners Coffee | West Asheville, NC" },
+      {
+        name: "twitter:description",
+        content:
+          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/QZxkAb7UNWY9XnCDND0o23hG4Ej1/social-images/social-1782577650726-2026-06-27_17.26.55.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/QZxkAb7UNWY9XnCDND0o23hG4Ej1/social-images/social-1782577650726-2026-06-27_17.26.55.webp",
+      },
     ],
     links: [
       {

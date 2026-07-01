@@ -36,12 +36,16 @@ function InfoPage() {
       supabase.from("business_hours").select("*").order("sort_order"),
     ]);
     const map: Record<string, string> = {};
-    (infoRes.data ?? []).forEach((r: any) => { map[r.key] = r.value ?? ""; });
+    (infoRes.data ?? []).forEach((r: any) => {
+      map[r.key] = r.value ?? "";
+    });
     setInfo(map);
     setHours((hoursRes.data ?? []) as HourRow[]);
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function saveInfo() {
     const rows = INFO_FIELDS.map((f) => ({ key: f.key, value: info[f.key] ?? "" }));
@@ -52,12 +56,17 @@ function InfoPage() {
 
   async function addHourRow() {
     const sort = hours.reduce((m, h) => Math.max(m, h.sort_order), 0) + 1;
-    const { error } = await supabase.from("business_hours").insert({ label: "Day", hours_text: "9:00 AM – 5:00 PM", sort_order: sort });
+    const { error } = await supabase
+      .from("business_hours")
+      .insert({ label: "Day", hours_text: "9:00 AM – 5:00 PM", sort_order: sort });
     if (error) return toast.error(error.message);
     load();
   }
   async function saveHour(h: HourRow) {
-    const { error } = await supabase.from("business_hours").update({ label: h.label, hours_text: h.hours_text, sort_order: h.sort_order }).eq("id", h.id);
+    const { error } = await supabase
+      .from("business_hours")
+      .update({ label: h.label, hours_text: h.hours_text, sort_order: h.sort_order })
+      .eq("id", h.id);
     if (error) return toast.error(error.message);
     toast.success("Saved");
   }
@@ -88,28 +97,69 @@ function InfoPage() {
           <div className="mt-4 grid gap-3">
             {INFO_FIELDS.map((f) => (
               <div key={f.key} className="grid gap-1.5">
-                <Label htmlFor={f.key} className="text-xs text-slate-600">{f.label}</Label>
-                <Input id={f.key} value={info[f.key] ?? ""} onChange={(e) => setInfo((s) => ({ ...s, [f.key]: e.target.value }))} />
+                <Label htmlFor={f.key} className="text-xs text-slate-600">
+                  {f.label}
+                </Label>
+                <Input
+                  id={f.key}
+                  value={info[f.key] ?? ""}
+                  onChange={(e) => setInfo((s) => ({ ...s, [f.key]: e.target.value }))}
+                />
               </div>
             ))}
-            <Button onClick={saveInfo} className="mt-2"><Save className="size-4 mr-1.5" /> Save info</Button>
+            <Button onClick={saveInfo} className="mt-2">
+              <Save className="size-4 mr-1.5" /> Save info
+            </Button>
           </div>
         </section>
 
         <section className="bg-white rounded-2xl border border-slate-200 p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-900">Hours</h2>
-            <Button size="sm" variant="outline" onClick={addHourRow}><Plus className="size-4 mr-1" /> Add</Button>
+            <Button size="sm" variant="outline" onClick={addHourRow}>
+              <Plus className="size-4 mr-1" /> Add
+            </Button>
           </div>
           <div className="mt-4 space-y-3">
             {hours.map((h) => (
               <div key={h.id} className="grid grid-cols-12 gap-2 items-center">
-                <Input className="col-span-4" value={h.label} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, label: e.target.value } : x))} />
-                <Input className="col-span-5" value={h.hours_text} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, hours_text: e.target.value } : x))} />
-                <Input className="col-span-1" type="number" value={h.sort_order} onChange={(e) => setHours((hs) => hs.map((x) => x.id === h.id ? { ...x, sort_order: Number(e.target.value) } : x))} />
+                <Input
+                  className="col-span-4"
+                  value={h.label}
+                  onChange={(e) =>
+                    setHours((hs) =>
+                      hs.map((x) => (x.id === h.id ? { ...x, label: e.target.value } : x)),
+                    )
+                  }
+                />
+                <Input
+                  className="col-span-5"
+                  value={h.hours_text}
+                  onChange={(e) =>
+                    setHours((hs) =>
+                      hs.map((x) => (x.id === h.id ? { ...x, hours_text: e.target.value } : x)),
+                    )
+                  }
+                />
+                <Input
+                  className="col-span-1"
+                  type="number"
+                  value={h.sort_order}
+                  onChange={(e) =>
+                    setHours((hs) =>
+                      hs.map((x) =>
+                        x.id === h.id ? { ...x, sort_order: Number(e.target.value) } : x,
+                      ),
+                    )
+                  }
+                />
                 <div className="col-span-2 flex gap-1 justify-end">
-                  <Button size="icon" variant="outline" onClick={() => saveHour(h)}><Save className="size-4" /></Button>
-                  <Button size="icon" variant="outline" onClick={() => deleteHour(h.id)}><Trash2 className="size-4 text-red-500" /></Button>
+                  <Button size="icon" variant="outline" onClick={() => saveHour(h)}>
+                    <Save className="size-4" />
+                  </Button>
+                  <Button size="icon" variant="outline" onClick={() => deleteHour(h.id)}>
+                    <Trash2 className="size-4 text-red-500" />
+                  </Button>
                 </div>
               </div>
             ))}
@@ -127,18 +177,65 @@ function InfoPage() {
             <h3 className="mt-2 font-serif text-2xl">Come hang out.</h3>
             <div className="mt-5 grid sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-2">
-                <p className="flex items-start gap-2"><MapPin className="size-4 mt-0.5 text-pink-700" /><span>{info.address_line1}<br/>{info.address_line2}</span></p>
-                <p className="flex items-start gap-2"><Clock className="size-4 mt-0.5 text-pink-700" /><span>
-                  {hours.map((h) => (<span key={h.id} className="block"><strong>{h.label}:</strong> {h.hours_text}</span>))}
-                </span></p>
+                <p className="flex items-start gap-2">
+                  <MapPin className="size-4 mt-0.5 text-pink-700" />
+                  <span>
+                    {info.address_line1}
+                    <br />
+                    {info.address_line2}
+                  </span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <Clock className="size-4 mt-0.5 text-pink-700" />
+                  <span>
+                    {hours.map((h) => (
+                      <span key={h.id} className="block">
+                        <strong>{h.label}:</strong> {h.hours_text}
+                      </span>
+                    ))}
+                  </span>
+                </p>
               </div>
               <div className="space-y-2">
-                <p className="flex items-center gap-2"><Instagram className="size-4 text-pink-700" /> <a href={info.instagram_url} target="_blank" rel="noreferrer" className="underline truncate">{info.instagram_url || "—"}</a></p>
-                <p className="flex items-center gap-2"><Facebook className="size-4 text-pink-700" /> <a href={info.facebook_url} target="_blank" rel="noreferrer" className="underline truncate">{info.facebook_url || "—"}</a></p>
-                <p className="flex items-center gap-2"><Gift className="size-4 text-pink-700" /> <a href={info.gift_card_url} target="_blank" rel="noreferrer" className="underline truncate">{info.gift_card_url || "—"}</a></p>
+                <p className="flex items-center gap-2">
+                  <Instagram className="size-4 text-pink-700" />{" "}
+                  <a
+                    href={info.instagram_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline truncate"
+                  >
+                    {info.instagram_url || "—"}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Facebook className="size-4 text-pink-700" />{" "}
+                  <a
+                    href={info.facebook_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline truncate"
+                  >
+                    {info.facebook_url || "—"}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Gift className="size-4 text-pink-700" />{" "}
+                  <a
+                    href={info.gift_card_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline truncate"
+                  >
+                    {info.gift_card_url || "—"}
+                  </a>
+                </p>
               </div>
             </div>
-            <p className="mt-4 text-xs text-slate-500">This is how the new info will appear once saved. Map uses search: <em>{info.map_query || "—"}</em></p>
+            <p className="mt-4 text-xs text-slate-500">
+              This is how the new info will appear once saved. Map uses search:{" "}
+              <em>{info.map_query || "—"}</em>
+            </p>
           </div>
         </DialogContent>
       </Dialog>

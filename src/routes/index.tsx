@@ -4,8 +4,19 @@ import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Coffee, Flame, MapPin, Clock, Instagram, Facebook, Heart, PawPrint,
-  Sparkles, Gift, Menu as MenuIcon, X, Plus,
+  Coffee,
+  Flame,
+  MapPin,
+  Clock,
+  Instagram,
+  Facebook,
+  Heart,
+  PawPrint,
+  Sparkles,
+  Gift,
+  Menu as MenuIcon,
+  X,
+  Plus,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
@@ -22,9 +33,17 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Bad Manners Coffee — West Asheville's goth-Barbie coffee shop" },
-      { name: "description", content: "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted." },
+      {
+        name: "description",
+        content:
+          "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted.",
+      },
       { property: "og:title", content: "Bad Manners Coffee" },
-      { property: "og:description", content: "Goth-Barbie-punk coffee on Haywood Rd. Specialty espresso, seasonal drinks, pop-ups." },
+      {
+        property: "og:description",
+        content:
+          "Goth-Barbie-punk coffee on Haywood Rd. Specialty espresso, seasonal drinks, pop-ups.",
+      },
       { property: "og:image", content: FALLBACK_PHOTOS.heroInterior },
       { name: "twitter:image", content: FALLBACK_PHOTOS.heroInterior },
     ],
@@ -62,12 +81,18 @@ function Home() {
 function BgFlourishes() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-      <div className="absolute -top-32 -left-32 h-[520px] w-[520px] rounded-full opacity-30 blur-3xl"
-           style={{ background: "radial-gradient(circle, var(--pink) 0%, transparent 65%)" }} />
-      <div className="absolute top-1/3 -right-40 h-[600px] w-[600px] rounded-full opacity-25 blur-3xl"
-           style={{ background: "radial-gradient(circle, var(--fire-mid) 0%, transparent 65%)" }} />
-      <div className="absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full opacity-20 blur-3xl"
-           style={{ background: "radial-gradient(circle, var(--fire-to) 0%, transparent 65%)" }} />
+      <div
+        className="absolute -top-32 -left-32 h-[520px] w-[520px] rounded-full opacity-30 blur-3xl"
+        style={{ background: "radial-gradient(circle, var(--pink) 0%, transparent 65%)" }}
+      />
+      <div
+        className="absolute top-1/3 -right-40 h-[600px] w-[600px] rounded-full opacity-25 blur-3xl"
+        style={{ background: "radial-gradient(circle, var(--fire-mid) 0%, transparent 65%)" }}
+      />
+      <div
+        className="absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full opacity-20 blur-3xl"
+        style={{ background: "radial-gradient(circle, var(--fire-to) 0%, transparent 65%)" }}
+      />
     </div>
   );
 }
@@ -79,7 +104,8 @@ function Nav() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 30);
-    fn(); window.addEventListener("scroll", fn);
+    fn();
+    window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
   }, []);
   const links = [
@@ -92,22 +118,35 @@ function Nav() {
   return (
     <header className={`fixed inset-x-0 top-0 z-40 transition-all ${scrolled ? "py-2" : "py-4"}`}>
       <div className="mx-auto max-w-7xl px-4">
-        <div className={`flex items-center justify-between rounded-2xl px-4 py-2 transition-all ${scrolled ? "glass" : ""}`}>
+        <div
+          className={`flex items-center justify-between rounded-2xl px-4 py-2 transition-all ${scrolled ? "glass" : ""}`}
+        >
           <a href="#top" className="flex items-center gap-3">
-            <img src={logo} alt="Bad Manners Coffee" className="h-10 w-10 rounded-full object-cover ring-2 ring-[--pink]/40" />
+            <img
+              src={logo}
+              alt="Bad Manners Coffee"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-[--pink]/40"
+            />
             <span className="font-display text-xl leading-none">
               Bad <span className="text-fire">Manners</span>
             </span>
           </a>
           <nav className="hidden items-center gap-6 md:flex">
             {links.map((l) => (
-              <a key={l.href} href={l.href} className="text-sm font-medium text-foreground/80 hover:text-[--pink-deep] transition-colors">
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-sm font-medium text-foreground/80 hover:text-[--pink-deep] transition-colors"
+              >
                 {l.label}
               </a>
             ))}
             <AccountNav />
             <Button asChild className="bg-fire text-white hover:opacity-95">
-              <a href="#visit"><MapPin className="mr-1.5 size-4" />Find Us</a>
+              <a href="#visit">
+                <MapPin className="mr-1.5 size-4" />
+                Find Us
+              </a>
             </Button>
           </nav>
           <div className="md:hidden flex items-center gap-1">
@@ -120,7 +159,14 @@ function Nav() {
         {open && (
           <div className="md:hidden mt-2 glass rounded-2xl p-4 grid gap-3">
             {links.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-base font-medium">{l.label}</a>
+              <a
+                key={l.href}
+                href={l.href}
+                onClick={() => setOpen(false)}
+                className="text-base font-medium"
+              >
+                {l.label}
+              </a>
             ))}
           </div>
         )}
@@ -132,7 +178,14 @@ function Nav() {
 /* --------------------------------- hero --------------------------------- */
 
 type SiteImages = typeof FALLBACK_PHOTOS;
-type SiteInfo = { address_line1: string; address_line2: string; instagram_url: string; facebook_url: string; gift_card_url: string; map_query: string };
+type SiteInfo = {
+  address_line1: string;
+  address_line2: string;
+  instagram_url: string;
+  facebook_url: string;
+  gift_card_url: string;
+  map_query: string;
+};
 type SiteHours = { label: string; hours_text: string }[];
 
 function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
@@ -140,7 +193,13 @@ function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
     <section id="top" className="relative grain isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
         <img src={PHOTOS.heroInterior} alt="" className="h-full w-full object-cover opacity-25" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,235,240,.6), rgba(255,200,180,.25) 60%, var(--background))" }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,235,240,.6), rgba(255,200,180,.25) 60%, var(--background))",
+          }}
+        />
       </div>
       <div className="mx-auto max-w-7xl px-4 pt-36 pb-24 sm:pt-44 sm:pb-32 grid gap-10 lg:grid-cols-2 lg:items-center">
         <div className="reveal">
@@ -148,25 +207,50 @@ function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
             <Sparkles className="size-3.5" /> West Asheville, NC
           </span>
           <h1 className="mt-5 font-display text-5xl leading-[1.05] sm:text-7xl">
-            Bad <span className="text-fire">Manners</span><br />
+            Bad <span className="text-fire">Manners</span>
+            <br />
             <span className="font-serif italic text-foreground/85">good coffee.</span>
           </h1>
           <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-            Goth-Barbie-punk coffee on Haywood Rd. Hand-pulled espresso, weird-good
-            seasonal drinks, dog-friendly patio, and a hot-pink room full of regulars.
+            Goth-Barbie-punk coffee on Haywood Rd. Hand-pulled espresso, weird-good seasonal drinks,
+            dog-friendly patio, and a hot-pink room full of regulars.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="bg-fire text-white hover:opacity-95 h-12 px-6 text-base">
-              <a href="#menu"><Coffee className="mr-2 size-5" />View Menu</a>
+            <Button
+              asChild
+              size="lg"
+              className="bg-fire text-white hover:opacity-95 h-12 px-6 text-base"
+            >
+              <a href="#menu">
+                <Coffee className="mr-2 size-5" />
+                View Menu
+              </a>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base border-[--pink]/40 hover:bg-[--pink]/10">
-              <a href="#visit"><MapPin className="mr-2 size-5" />Find Us</a>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 px-6 text-base border-[--pink]/40 hover:bg-[--pink]/10"
+            >
+              <a href="#visit">
+                <MapPin className="mr-2 size-5" />
+                Find Us
+              </a>
             </Button>
           </div>
           <div className="mt-10 flex items-center gap-6 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex items-center gap-1.5"><PawPrint className="size-4 text-[--pink-deep]" />Dog-friendly</span>
-            <span className="flex items-center gap-1.5"><Heart className="size-4 text-[--pink-deep]" />Mutual-aid rooted</span>
-            <span className="hidden sm:flex items-center gap-1.5"><Flame className="size-4 text-[--pink-deep]" />Pop-up events</span>
+            <span className="flex items-center gap-1.5">
+              <PawPrint className="size-4 text-[--pink-deep]" />
+              Dog-friendly
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Heart className="size-4 text-[--pink-deep]" />
+              Mutual-aid rooted
+            </span>
+            <span className="hidden sm:flex items-center gap-1.5">
+              <Flame className="size-4 text-[--pink-deep]" />
+              Pop-up events
+            </span>
           </div>
         </div>
 
@@ -182,8 +266,14 @@ function Hero({ photos: PHOTOS }: { photos: SiteImages }) {
             {/* steam */}
             <div className="absolute -top-6 left-1/2 -translate-x-1/2">
               <span className="steam" style={{ animationDelay: "0s" }} />
-              <span className="steam" style={{ animationDelay: "1.4s", left: "calc(50% - 18px)" }} />
-              <span className="steam" style={{ animationDelay: "2.6s", left: "calc(50% + 14px)" }} />
+              <span
+                className="steam"
+                style={{ animationDelay: "1.4s", left: "calc(50% - 18px)" }}
+              />
+              <span
+                className="steam"
+                style={{ animationDelay: "2.6s", left: "calc(50% + 14px)" }}
+              />
             </div>
             {/* orbiting stars */}
             <Star className="absolute -top-2 -right-2 text-[--pink-deep]" />
@@ -217,15 +307,14 @@ function Story({ photos: PHOTOS }: { photos: SiteImages }) {
           </h2>
           <div className="mt-6 space-y-4 text-lg text-muted-foreground font-serif">
             <p>
-              Bad Manners began in December 2023 as a tiny coffee cart tucked
-              inside Provisions Mercantile — Ash slinging espresso between vintage
-              racks and the kind of regulars who become friends by the second visit.
+              Bad Manners began in December 2023 as a tiny coffee cart tucked inside Provisions
+              Mercantile — Ash slinging espresso between vintage racks and the kind of regulars who
+              become friends by the second visit.
             </p>
             <p>
-              A year later we crossed the river and unlocked the door at
-              697 Haywood Rd. Same drinks, same rules: be a little rude to
-              mediocrity, be very kind to people. The walls are pink. The
-              espresso is dialed. The dog gets a pup cup.
+              A year later we crossed the river and unlocked the door at 697 Haywood Rd. Same
+              drinks, same rules: be a little rude to mediocrity, be very kind to people. The walls
+              are pink. The espresso is dialed. The dog gets a pup cup.
             </p>
           </div>
           <div className="mt-8 flex items-center gap-4">
@@ -236,10 +325,16 @@ function Story({ photos: PHOTOS }: { photos: SiteImages }) {
         <div className="reveal order-1 lg:order-2">
           <div className="relative tilt-card">
             <div className="absolute -inset-3 rounded-3xl bg-fire opacity-25 blur-2xl" />
-            <img src={PHOTOS.story} alt="Inside Bad Manners Coffee" className="relative w-full rounded-3xl object-cover aspect-[4/5] shadow-2xl ring-1 ring-[--pink]/30" />
+            <img
+              src={PHOTOS.story}
+              alt="Inside Bad Manners Coffee"
+              className="relative w-full rounded-3xl object-cover aspect-[4/5] shadow-2xl ring-1 ring-[--pink]/30"
+            />
             <div className="absolute -bottom-6 -left-6 glass rounded-2xl px-5 py-3">
               <p className="font-display text-2xl text-fire">Est. 2023</p>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">West Asheville</p>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                West Asheville
+              </p>
             </div>
           </div>
         </div>
@@ -255,7 +350,11 @@ function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; ce
   return (
     <button
       onClick={() => {
-        cart.add({ id: item.id ? `menu:${item.id}` : `name:${item.name}`, name: item.name, unit_price_cents: cents });
+        cart.add({
+          id: item.id ? `menu:${item.id}` : `name:${item.name}`,
+          name: item.name,
+          unit_price_cents: cents,
+        });
         toast.success(`${item.name} added — ${formatCents(cents)}`, { duration: 1600 });
       }}
       className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-[--pink]/40 bg-white/60 hover:bg-fire hover:text-white hover:border-transparent px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
@@ -265,9 +364,20 @@ function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; ce
   );
 }
 
-function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data").MenuSection[] }) {
+function MenuSection({
+  menu: MENU,
+}: {
+  menu: import("@/components/site/menu-data").MenuSection[];
+}) {
   return (
-    <section id="menu" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)" }}>
+    <section
+      id="menu"
+      className="relative py-24 sm:py-32"
+      style={{
+        background:
+          "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)",
+      }}
+    >
       <div className="mx-auto max-w-7xl px-4">
         <div className="reveal text-center">
           <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">The Menu</span>
@@ -294,13 +404,20 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
 
           {MENU.map((s) => (
             <TabsContent key={s.id} value={s.id} className="mt-10">
-              {s.blurb && <p className="text-center font-serif italic text-muted-foreground mb-8">{s.blurb}</p>}
+              {s.blurb && (
+                <p className="text-center font-serif italic text-muted-foreground mb-8">
+                  {s.blurb}
+                </p>
+              )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.items.map((item, i) => {
                   const cents = parsePriceToCents(item.price);
                   const canOrder = !!cents && !item.is_sold_out;
                   return (
-                    <div key={item.id ?? i} className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 ${item.is_sold_out ? "opacity-70" : ""}`}>
+                    <div
+                      key={item.id ?? i}
+                      className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 ${item.is_sold_out ? "opacity-70" : ""}`}
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -311,10 +428,18 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
                               </span>
                             )}
                           </div>
-                          {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
+                          {item.note && (
+                            <p className="mt-1 text-sm text-muted-foreground font-serif italic">
+                              {item.note}
+                            </p>
+                          )}
                         </div>
                         {item.price && (
-                          <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
+                          <span
+                            className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}
+                          >
+                            {item.price}
+                          </span>
                         )}
                       </div>
                       {canOrder && <AddToCartBtn item={item} cents={cents!} />}
@@ -332,7 +457,6 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
                   ))}
                 </div>
               )}
-
             </TabsContent>
           ))}
         </Tabs>
@@ -348,8 +472,16 @@ function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
     <section className="mx-auto max-w-7xl px-4 py-20">
       <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {PHOTOS.gallery.map((src, i) => (
-          <div key={i} className={`tilt-card relative overflow-hidden rounded-2xl ${i % 5 === 0 ? "sm:row-span-2 sm:aspect-square" : "aspect-square"}`}>
-            <img src={src} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-700 hover:scale-110" />
+          <div
+            key={i}
+            className={`tilt-card relative overflow-hidden rounded-2xl ${i % 5 === 0 ? "sm:row-span-2 sm:aspect-square" : "aspect-square"}`}
+          >
+            <img
+              src={src}
+              alt={`Bad Manners Coffee gallery photo ${i + 1}`}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+            />
           </div>
         ))}
       </div>
@@ -361,9 +493,21 @@ function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
 
 function Community({ photos: PHOTOS }: { photos: SiteImages }) {
   const cards = [
-    { icon: PawPrint, title: "Dog-friendly", body: "Patio pups always welcome. Pup cups on the house." },
-    { icon: Heart, title: "Mutual aid", body: "We contribute to local mutual-aid funds and host benefit days for neighbors in need." },
-    { icon: Sparkles, title: "Pop-ups & events", body: "Tattoo flash days, vinyl nights, queer markets, and seasonal collabs with WNC makers." },
+    {
+      icon: PawPrint,
+      title: "Dog-friendly",
+      body: "Patio pups always welcome. Pup cups on the house.",
+    },
+    {
+      icon: Heart,
+      title: "Mutual aid",
+      body: "We contribute to local mutual-aid funds and host benefit days for neighbors in need.",
+    },
+    {
+      icon: Sparkles,
+      title: "Pop-ups & events",
+      body: "Tattoo flash days, vinyl nights, queer markets, and seasonal collabs with WNC makers.",
+    },
   ];
   return (
     <section id="community" className="relative py-24 sm:py-32">
@@ -374,10 +518,14 @@ function Community({ photos: PHOTOS }: { photos: SiteImages }) {
             Coffee is the <span className="text-fire">excuse.</span>
           </h2>
           <p className="mt-5 text-muted-foreground text-lg font-serif">
-            The shop is a living room for the strange and the kind. Bring your dog,
-            bring your zine, bring your hangover. We'll handle the rest.
+            The shop is a living room for the strange and the kind. Bring your dog, bring your zine,
+            bring your hangover. We'll handle the rest.
           </p>
-          <img src={PHOTOS.community} alt="Community at Bad Manners" className="mt-8 rounded-2xl aspect-[4/3] w-full object-cover ring-1 ring-[--pink]/30" />
+          <img
+            src={PHOTOS.community}
+            alt="Community at Bad Manners"
+            className="mt-8 rounded-2xl aspect-[4/3] w-full object-cover ring-1 ring-[--pink]/30"
+          />
         </div>
         <div className="lg:col-span-3 grid gap-4 sm:grid-cols-1">
           {cards.map((c, i) => (
@@ -402,12 +550,22 @@ function Community({ photos: PHOTOS }: { photos: SiteImages }) {
 function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
   const mapQ = encodeURIComponent(info.map_query);
   return (
-    <section id="visit" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--fire-to) 8%, transparent), transparent)" }}>
+    <section
+      id="visit"
+      className="relative py-24 sm:py-32"
+      style={{
+        background:
+          "linear-gradient(180deg, transparent, color-mix(in oklch, var(--fire-to) 8%, transparent), transparent)",
+      }}
+    >
       <div className="mx-auto max-w-7xl px-4">
         <div className="reveal text-center">
           <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">Visit us</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl">
-            {info.address_line1.split(",")[0]}, <span className="text-fire">{info.address_line1.split(",").slice(1).join(",").trim() || "Suite G"}</span>
+            {info.address_line1.split(",")[0]},{" "}
+            <span className="text-fire">
+              {info.address_line1.split(",").slice(1).join(",").trim() || "Suite G"}
+            </span>
           </h2>
         </div>
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
@@ -416,11 +574,16 @@ function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
               <MapPin className="size-6 text-[--pink-deep] mt-1" />
               <div>
                 <p className="font-display text-xl">Address</p>
-                <p className="mt-1 text-muted-foreground">{info.address_line1}<br />{info.address_line2}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {info.address_line1}
+                  <br />
+                  {info.address_line2}
+                </p>
                 <a
                   className="mt-2 inline-block text-sm font-medium text-[--pink-deep] underline decoration-dotted underline-offset-4"
                   href={`https://maps.google.com/?q=${mapQ}`}
-                  target="_blank" rel="noreferrer"
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   Open in Google Maps →
                 </a>
@@ -431,7 +594,10 @@ function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
               <div className="w-full">
                 <p className="font-display text-xl">Hours</p>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-muted-foreground">
-                  {hours.flatMap((h, i) => [<dt key={`l${i}`}>{h.label}</dt>, <dd key={`v${i}`}>{h.hours_text}</dd>])}
+                  {hours.flatMap((h, i) => [
+                    <dt key={`l${i}`}>{h.label}</dt>,
+                    <dd key={`v${i}`}>{h.hours_text}</dd>,
+                  ])}
                 </dl>
               </div>
             </div>
@@ -439,7 +605,9 @@ function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
               <Instagram className="size-6 text-[--pink-deep] mt-1" />
               <div>
                 <p className="font-display text-xl">Say hi</p>
-                <p className="mt-1 text-muted-foreground">DMs open on Instagram for daily specials & event news.</p>
+                <p className="mt-1 text-muted-foreground">
+                  DMs open on Instagram for daily specials & event news.
+                </p>
               </div>
             </div>
           </div>
@@ -462,7 +630,10 @@ function Visit({ info, hours }: { info: SiteInfo; hours: SiteHours }) {
 
 function GiftAndCatering({ info }: { info: SiteInfo }) {
   return (
-    <section id="catering" className="mx-auto max-w-7xl px-4 py-24 sm:py-32 grid gap-12 lg:grid-cols-2">
+    <section
+      id="catering"
+      className="mx-auto max-w-7xl px-4 py-24 sm:py-32 grid gap-12 lg:grid-cols-2"
+    >
       <div className="reveal relative overflow-hidden rounded-3xl bg-fire p-10 text-white tilt-card">
         <div className="absolute -right-12 -top-12 opacity-25 spin-slow">
           <Star className="size-64" />
@@ -470,10 +641,15 @@ function GiftAndCatering({ info }: { info: SiteInfo }) {
         <Gift className="size-10" />
         <h3 className="mt-4 font-display text-4xl">Gift Cards</h3>
         <p className="mt-3 max-w-md text-white/90 font-serif text-lg">
-          Caffeinate someone you love (or owe). Digital and physical cards available
-          through our Square store.
+          Caffeinate someone you love (or owe). Digital and physical cards available through our
+          Square store.
         </p>
-        <Button asChild size="lg" variant="secondary" className="mt-6 bg-white text-[--pink-deep] hover:bg-white/90">
+        <Button
+          asChild
+          size="lg"
+          variant="secondary"
+          className="mt-6 bg-white text-[--pink-deep] hover:bg-white/90"
+        >
           <a href={info.gift_card_url} target="_blank" rel="noreferrer">
             Buy a gift card →
           </a>
@@ -481,11 +657,13 @@ function GiftAndCatering({ info }: { info: SiteInfo }) {
       </div>
 
       <div className="reveal">
-        <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">Catering & events</span>
+        <span className="text-xs uppercase tracking-[0.3em] text-[--pink-deep]">
+          Catering & events
+        </span>
         <h3 className="mt-3 font-display text-4xl">Bring us to your thing.</h3>
         <p className="mt-3 text-muted-foreground font-serif text-lg">
-          Weddings, markets, office mornings, weird-art openings — tell us what you're
-          planning and we'll get back with a quote.
+          Weddings, markets, office mornings, weird-art openings — tell us what you're planning and
+          we'll get back with a quote.
         </p>
         <div className="mt-6">
           <CateringForm />
@@ -503,34 +681,69 @@ function Footer({ info }: { info: SiteInfo }) {
       <div className="mx-auto max-w-7xl px-4 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-[--pink]/40" />
-            <span className="font-display text-2xl">Bad <span className="text-fire">Manners</span></span>
+            <img
+              src={logo}
+              alt=""
+              className="h-12 w-12 rounded-full object-cover ring-2 ring-[--pink]/40"
+            />
+            <span className="font-display text-2xl">
+              Bad <span className="text-fire">Manners</span>
+            </span>
           </Link>
           <p className="mt-4 text-sm text-muted-foreground">
-            Independent coffee shop in West Asheville. Pink walls, dialed espresso,
-            community-first.
+            Independent coffee shop in West Asheville. Pink walls, dialed espresso, community-first.
           </p>
         </div>
         <div>
           <p className="font-display text-lg">Explore</p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li><a href="#story" className="hover:text-[--pink-deep]">Our Story</a></li>
-            <li><a href="#menu" className="hover:text-[--pink-deep]">Menu</a></li>
-            <li><a href="#community" className="hover:text-[--pink-deep]">Community</a></li>
-            <li><a href="#visit" className="hover:text-[--pink-deep]">Visit</a></li>
-            <li><a href="#catering" className="hover:text-[--pink-deep]">Catering</a></li>
+            <li>
+              <a href="#story" className="hover:text-[--pink-deep]">
+                Our Story
+              </a>
+            </li>
+            <li>
+              <a href="#menu" className="hover:text-[--pink-deep]">
+                Menu
+              </a>
+            </li>
+            <li>
+              <a href="#community" className="hover:text-[--pink-deep]">
+                Community
+              </a>
+            </li>
+            <li>
+              <a href="#visit" className="hover:text-[--pink-deep]">
+                Visit
+              </a>
+            </li>
+            <li>
+              <a href="#catering" className="hover:text-[--pink-deep]">
+                Catering
+              </a>
+            </li>
           </ul>
         </div>
         <div>
           <p className="font-display text-lg">Follow</p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <a href={info.instagram_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+              <a
+                href={info.instagram_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 hover:text-[--pink-deep]"
+              >
                 <Instagram className="size-4" /> Instagram
               </a>
             </li>
             <li>
-              <a href={info.facebook_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[--pink-deep]">
+              <a
+                href={info.facebook_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 hover:text-[--pink-deep]"
+              >
                 <Facebook className="size-4" /> Facebook
               </a>
             </li>
@@ -540,7 +753,12 @@ function Footer({ info }: { info: SiteInfo }) {
           <p className="font-display text-lg">Press</p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <a href="https://carolinas.eater.com/" target="_blank" rel="noreferrer" className="hover:text-[--pink-deep]">
+              <a
+                href="https://carolinas.eater.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-[--pink-deep]"
+              >
                 "Goth Barbie-punk" — Eater Carolinas
               </a>
             </li>
@@ -551,7 +769,9 @@ function Footer({ info }: { info: SiteInfo }) {
         <div className="mx-auto max-w-7xl px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Bad Manners Coffee. All rights reserved.</p>
           <p className="flex items-center gap-4">
-            <Link to="/admin/login" className="hover:text-[--pink-deep]">Admin</Link>
+            <Link to="/admin/login" className="hover:text-[--pink-deep]">
+              Admin
+            </Link>
             <span className="font-display">Be kind. Be a little bad.</span>
           </p>
         </div>

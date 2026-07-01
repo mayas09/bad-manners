@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // noExternals: bundle all server deps instead of externalizing + nf3-tracing them.
+  // The installed nf3/@vercel/nft build fails at build time trying to import a named
+  // export from a CJS module, which only happens on the externals-tracing code path.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- noExternals isn't in the narrow LovableViteTanstackOptions surface yet, but is forwarded through to nitro() at runtime
+  nitro: { noExternals: true } as any,
 });

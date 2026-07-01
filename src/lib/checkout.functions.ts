@@ -71,11 +71,17 @@ export const finalizeOrder = createServerFn({ method: "POST" })
     const session = await stripe.checkout.sessions.retrieve(data.sessionId);
     if (session.payment_status === "paid") {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.from("orders").update({
-        payment_status: "paid",
-        status: "confirmed",
-        stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
-      }).eq("id", data.orderId);
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          payment_status: "paid",
+          status: "confirmed",
+          stripe_payment_intent:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : (session.payment_intent?.id ?? null),
+        })
+        .eq("id", data.orderId);
       return { paid: true };
     }
     return { paid: false };

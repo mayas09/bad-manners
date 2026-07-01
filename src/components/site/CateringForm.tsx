@@ -18,7 +18,7 @@ export function CateringForm() {
       email: String(fd.get("email") || "").trim(),
       phone: String(fd.get("phone") || "").trim() || null,
       event_type: String(fd.get("event_type") || "").trim() || null,
-      event_date: (String(fd.get("event_date") || "").trim() || null),
+      event_date: String(fd.get("event_date") || "").trim() || null,
       guest_count: fd.get("guest_count") ? Number(fd.get("guest_count")) : null,
       message: String(fd.get("message") || "").trim(),
     };
@@ -75,20 +75,41 @@ export function CateringForm() {
         </Field>
       </div>
       <Field id="message" label="Tell us about it" required>
-        <Textarea id="message" name="message" rows={5} required placeholder="What you're imagining, drinks of interest, location…" />
+        <Textarea
+          id="message"
+          name="message"
+          rows={5}
+          required
+          placeholder="What you're imagining, drinks of interest, location…"
+        />
       </Field>
-      <Button type="submit" disabled={sending} className="bg-fire text-white hover:opacity-95 h-11 text-base">
+      <Button
+        type="submit"
+        disabled={sending}
+        className="bg-fire text-white hover:opacity-95 h-11 text-base"
+      >
         {sending ? "Sending…" : "Send Inquiry"}
       </Button>
     </form>
   );
 }
 
-function Field({ id, label, required, children }: { id: string; label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  id,
+  label,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id} className="text-xs uppercase tracking-wider text-muted-foreground">
-        {label}{required && <span className="text-[--pink-deep]"> *</span>}
+        {label}
+        {required && <span className="text-[--pink-deep]"> *</span>}
       </Label>
       {children}
     </div>

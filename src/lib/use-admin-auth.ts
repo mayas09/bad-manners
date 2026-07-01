@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { claimAdminIfEligible } from "@/lib/admin-bootstrap.functions";
 
 export type AdminAuthState = {
   loading: boolean;
@@ -11,11 +13,16 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const LAST_ACTIVITY_KEY = "bm_admin_last_activity";
 
 function markActivity() {
-  try { localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch {}
+  try {
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+  } catch {
+    /* localStorage unavailable (e.g. private browsing) */
+  }
 }
 
 export function useAdminAuth(): AdminAuthState {
   const [state, setState] = useState<AdminAuthState>({ loading: true, user: null, isAdmin: false });
+  const claim = useServerFn(claimAdminIfEligible);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,12 +32,22 @@ export function useAdminAuth(): AdminAuthState {
         if (!cancelled) setState({ loading: false, user: null, isAdmin: false });
         return;
       }
-      const { data } = await supabase
+      let { data } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
         .eq("role", "admin")
         .maybeSingle();
+      // Auto-promote allowlisted emails regardless of sign-in method (password or OAuth).
+      if (!data && email) {
+        await claim({ data: { userId, email } }).catch(() => {});
+        ({ data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "admin")
+          .maybeSingle());
+      }
       if (!cancelled) setState({ loading: false, user: { id: userId, email }, isAdmin: !!data });
     }
 
@@ -44,7 +61,9 @@ export function useAdminAuth(): AdminAuthState {
         });
         return;
       }
-    } catch {}
+    } catch {
+      /* localStorage unavailable (e.g. private browsing) */
+    }
 
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) markActivity();
@@ -53,7 +72,11 @@ export function useAdminAuth(): AdminAuthState {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        try { localStorage.removeItem(LAST_ACTIVITY_KEY); } catch {}
+        try {
+          localStorage.removeItem(LAST_ACTIVITY_KEY);
+        } catch {
+          /* localStorage unavailable (e.g. private browsing) */
+        }
         if (!cancelled) setState({ loading: false, user: null, isAdmin: false });
         return;
       }
@@ -74,7 +97,9 @@ export function useAdminAuth(): AdminAuthState {
         if (last && Date.now() - last > IDLE_TIMEOUT_MS) {
           supabase.auth.signOut();
         }
-      } catch {}
+      } catch {
+        /* localStorage unavailable (e.g. private browsing) */
+      }
     }, 60 * 1000);
 
     return () => {
@@ -83,6 +108,7 @@ export function useAdminAuth(): AdminAuthState {
       events.forEach((e) => window.removeEventListener(e, onActivity));
       window.clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return state;

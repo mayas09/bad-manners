@@ -20,7 +20,9 @@ function ResetPassword() {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => { if (data.session) setReady(true); });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -28,11 +30,17 @@ function ResetPassword() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const password = String(fd.get("password") || "");
-    if (password.length < 8) { toast.error("Password must be at least 8 characters."); return; }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.auth.updateUser({ password });
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
       toast.success("Password updated.");
       navigate({ to: "/admin" });
     } finally {
@@ -53,11 +61,24 @@ function ResetPassword() {
         </p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="password" className="text-slate-300">New password</Label>
-            <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8}
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
+            <Label htmlFor="password" className="text-slate-300">
+              New password
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+            />
           </div>
-          <Button type="submit" disabled={busy || !ready} className="w-full h-11 bg-pink-600 hover:bg-pink-500 text-white">
+          <Button
+            type="submit"
+            disabled={busy || !ready}
+            className="w-full h-11 bg-pink-600 hover:bg-pink-500 text-white"
+          >
             {busy ? "…" : "Update password"}
           </Button>
         </form>

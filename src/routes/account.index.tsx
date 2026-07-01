@@ -54,16 +54,23 @@ function AccountHome() {
 
   useEffect(() => {
     if (!auth.user) return;
-    supabase.from("orders").select("*").order("created_at", { ascending: false }).then(({ data }) => {
-      setOrders((data as Order[]) ?? []);
-    });
+    supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setOrders((data as Order[]) ?? []);
+      });
   }, [auth.user]);
 
   async function saveProfile() {
     if (!auth.user) return;
     setSavingProfile(true);
     const { error } = await supabase.from("profiles").upsert({
-      id: auth.user.id, first_name: first, last_name: last, phone: phone || null,
+      id: auth.user.id,
+      first_name: first,
+      last_name: last,
+      phone: phone || null,
     });
     setSavingProfile(false);
     if (error) return toast.error(error.message);
@@ -72,21 +79,37 @@ function AccountHome() {
   }
 
   async function cancelOrder(id: string) {
-    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", id).eq("status", "pending");
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "cancelled" })
+      .eq("id", id)
+      .eq("status", "pending");
     if (error) return toast.error(error.message);
     toast.success("Order cancelled");
-    setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: "cancelled" } : o));
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "cancelled" } : o)));
   }
 
-  if (auth.loading || !auth.user) return <div className="min-h-screen grid place-items-center">Loading…</div>;
+  if (auth.loading || !auth.user)
+    return <div className="min-h-screen grid place-items-center">Loading…</div>;
 
   return (
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-center" />
       <header className="border-b border-[--pink]/20 py-4 px-4">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
-          <Link to="/" className="font-display text-xl">Bad <span className="text-fire">Manners</span></Link>
-          <Button variant="outline" size="sm" onClick={async () => { await supabase.auth.signOut(); nav({ to: "/" }); }}>Sign out</Button>
+          <Link to="/" className="font-display text-xl">
+            Bad <span className="text-fire">Manners</span>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              nav({ to: "/" });
+            }}
+          >
+            Sign out
+          </Button>
         </div>
       </header>
 
@@ -94,22 +117,43 @@ function AccountHome() {
         <section>
           <h1 className="font-display text-3xl">My Orders</h1>
           <div className="mt-4 space-y-3">
-            {orders.length === 0 && <p className="text-muted-foreground py-8 text-center">No orders yet. <Link to="/" className="text-fire underline">Grab a drink</Link>.</p>}
+            {orders.length === 0 && (
+              <p className="text-muted-foreground py-8 text-center">
+                No orders yet.{" "}
+                <Link to="/" className="text-fire underline">
+                  Grab a drink
+                </Link>
+                .
+              </p>
+            )}
             {orders.map((o) => (
-              <div key={o.id} className="glass rounded-xl p-4 flex flex-wrap items-center gap-4 justify-between">
+              <div
+                key={o.id}
+                className="glass rounded-xl p-4 flex flex-wrap items-center gap-4 justify-between"
+              >
                 <div className="min-w-0">
                   <p className="font-display text-lg">Order #{o.order_number}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString()} · Pickup {new Date(o.pickup_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    {new Date(o.created_at).toLocaleString()} · Pickup{" "}
+                    {new Date(o.pickup_time).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${STATUS_COLORS[o.status] ?? ""}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${STATUS_COLORS[o.status] ?? ""}`}
+                  >
                     {o.status.replace("_", " ")}
                   </span>
-                  <span className="font-display text-lg text-fire">{formatCents(o.total_cents)}</span>
+                  <span className="font-display text-lg text-fire">
+                    {formatCents(o.total_cents)}
+                  </span>
                   {o.status === "pending" && (
-                    <Button size="sm" variant="outline" onClick={() => cancelOrder(o.id)}>Cancel</Button>
+                    <Button size="sm" variant="outline" onClick={() => cancelOrder(o.id)}>
+                      Cancel
+                    </Button>
                   )}
                 </div>
               </div>
@@ -120,12 +164,35 @@ function AccountHome() {
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Profile</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5"><Label>First name</Label><Input value={first} onChange={(e) => setFirst(e.target.value)} maxLength={50} /></div>
-            <div className="grid gap-1.5"><Label>Last name</Label><Input value={last} onChange={(e) => setLast(e.target.value)} maxLength={50} /></div>
-            <div className="grid gap-1.5"><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" maxLength={20} /></div>
-            <div className="grid gap-1.5"><Label>Email</Label><Input value={auth.user.email ?? ""} disabled /></div>
+            <div className="grid gap-1.5">
+              <Label>First name</Label>
+              <Input value={first} onChange={(e) => setFirst(e.target.value)} maxLength={50} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Last name</Label>
+              <Input value={last} onChange={(e) => setLast(e.target.value)} maxLength={50} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Phone</Label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                type="tel"
+                maxLength={20}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Email</Label>
+              <Input value={auth.user.email ?? ""} disabled />
+            </div>
           </div>
-          <Button onClick={saveProfile} disabled={savingProfile} className="mt-4 bg-fire text-white">Save profile</Button>
+          <Button
+            onClick={saveProfile}
+            disabled={savingProfile}
+            className="mt-4 bg-fire text-white"
+          >
+            Save profile
+          </Button>
         </section>
       </main>
     </div>

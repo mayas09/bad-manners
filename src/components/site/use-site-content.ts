@@ -18,7 +18,10 @@ export type SiteContent = {
   loaded: boolean;
 };
 
-const SECTION_META: Record<string, { title: string; blurb?: string; footer?: MenuSection["footer"] }> = {
+const SECTION_META: Record<
+  string,
+  { title: string; blurb?: string; footer?: MenuSection["footer"] }
+> = {
   coffee: { title: "Coffee", blurb: "Espresso pulled with care. Beans rotated seasonally." },
   "non-coffee": { title: "Non-Coffee", blurb: "For the no-caffeine crew and the matcha devotees." },
   tea: {
@@ -71,11 +74,23 @@ export function useSiteContent(): SiteContent {
       if (m.data && m.data.length) {
         const byId: Record<string, MenuSection> = {};
         for (const id of Object.keys(SECTION_META)) {
-          byId[id] = { id, title: SECTION_META[id].title, blurb: SECTION_META[id].blurb, items: [], footer: SECTION_META[id].footer };
+          byId[id] = {
+            id,
+            title: SECTION_META[id].title,
+            blurb: SECTION_META[id].blurb,
+            items: [],
+            footer: SECTION_META[id].footer,
+          };
         }
         m.data.forEach((r: any) => {
           if (!byId[r.section]) byId[r.section] = { id: r.section, title: r.section, items: [] };
-          byId[r.section].items.push({ id: r.id, name: r.name, price: r.price ?? undefined, note: r.note ?? undefined, is_sold_out: !!r.is_sold_out });
+          byId[r.section].items.push({
+            id: r.id,
+            name: r.name,
+            price: r.price ?? undefined,
+            note: r.note ?? undefined,
+            is_sold_out: !!r.is_sold_out,
+          });
         });
         menu = Object.values(byId).filter((s) => s.items.length > 0);
       }
@@ -87,11 +102,16 @@ export function useSiteContent(): SiteContent {
       });
 
       // Hours
-      const hours = h.data && h.data.length ? h.data.map((r: any) => ({ label: r.label, hours_text: r.hours_text })) : FALLBACK_HOURS;
+      const hours =
+        h.data && h.data.length
+          ? h.data.map((r: any) => ({ label: r.label, hours_text: r.hours_text }))
+          : FALLBACK_HOURS;
 
       // Images
       const photos = { ...FALLBACK_PHOTOS };
-      const galleryRows = (img.data ?? []).filter((r: any) => r.category === "gallery").sort((a: any, b: any) => a.sort_order - b.sort_order);
+      const galleryRows = (img.data ?? [])
+        .filter((r: any) => r.category === "gallery")
+        .sort((a: any, b: any) => a.sort_order - b.sort_order);
       if (galleryRows.length) photos.gallery = galleryRows.map((r: any) => r.url);
       (img.data ?? []).forEach((r: any) => {
         if (r.key === "hero_interior") photos.heroInterior = r.url;
@@ -101,7 +121,9 @@ export function useSiteContent(): SiteContent {
 
       setState({ menu, info, hours, photos, loaded: true });
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return state;

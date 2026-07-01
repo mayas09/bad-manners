@@ -45,10 +45,13 @@ function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, Item[]>>({});
   const [soundOn, setSoundOn] = useState(true);
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
   const soundOnRef = useRef(true);
   const knownIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => { soundOnRef.current = soundOn; }, [soundOn]);
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
 
   function playChime() {
     if (!soundOnRef.current) return;
@@ -59,16 +62,23 @@ function OrdersPage() {
       o.frequency.value = 880;
       o.type = "sine";
       g.gain.value = 0.1;
-      o.connect(g); g.connect(ctx.destination);
+      o.connect(g);
+      g.connect(ctx.destination);
       o.start();
       o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
       o.stop(ctx.currentTime + 0.42);
-    } catch {}
+    } catch {
+      /* Web Audio unsupported in this browser */
+    }
   }
 
   async function load() {
-    const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(100);
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
     const list = (data as Order[]) ?? [];
     // Detect new orders since last load
     if (knownIdsRef.current.size > 0) {
@@ -84,10 +94,20 @@ function OrdersPage() {
     setOrders(list);
 
     if (list.length) {
-      const { data: items } = await supabase.from("order_items").select("order_id,name,quantity,special_notes").in("order_id", list.map((o) => o.id));
+      const { data: items } = await supabase
+        .from("order_items")
+        .select("order_id,name,quantity,special_notes")
+        .in(
+          "order_id",
+          list.map((o) => o.id),
+        );
       const grouped: Record<string, Item[]> = {};
       (items ?? []).forEach((it: any) => {
-        (grouped[it.order_id] ||= []).push({ name: it.name, quantity: it.quantity, special_notes: it.special_notes });
+        (grouped[it.order_id] ||= []).push({
+          name: it.name,
+          quantity: it.quantity,
+          special_notes: it.special_notes,
+        });
       });
       setItemsByOrder(grouped);
     }
@@ -100,14 +120,19 @@ function OrdersPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => load())
       .subscribe();
     const interval = window.setInterval(load, 30000);
-    return () => { supabase.removeChannel(channel); window.clearInterval(interval); };
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function advance(o: Order) {
     const next = STATUS_FLOW[o.status];
     if (!next) return;
+    setAdvancingId(o.id);
     const { error } = await supabase.from("orders").update({ status: next }).eq("id", o.id);
+    setAdvancingId(null);
     if (error) return toast.error(error.message);
     toast.success(`Order #${o.order_number} → ${next.replace("_", " ")}`);
   }
@@ -120,7 +145,15 @@ function OrdersPage() {
           <p className="text-sm text-slate-500">Live updates every 30s + realtime push.</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setSoundOn((s) => !s)}>
-          {soundOn ? <><Volume2 className="size-4 mr-1.5" /> Sound on</> : <><VolumeX className="size-4 mr-1.5" /> Muted</>}
+          {soundOn ? (
+            <>
+              <Volume2 className="size-4 mr-1.5" /> Sound on
+            </>
+          ) : (
+            <>
+              <VolumeX className="size-4 mr-1.5" /> Muted
+            </>
+          )}
         </Button>
       </div>
 
@@ -128,7 +161,9 @@ function OrdersPage() {
         <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
           <ShoppingBag className="size-10 text-slate-300 mx-auto" />
           <p className="mt-4 text-sm font-medium text-slate-700">No orders yet</p>
-          <p className="mt-1 text-xs text-slate-500">Customer orders will appear here in real time.</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Customer orders will appear here in real time.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -140,7 +175,9 @@ function OrdersPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-slate-900">Order #{o.order_number}</p>
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${STATUS_CLASS[o.status]}`}>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${STATUS_CLASS[o.status]}`}
+                      >
                         {o.status.replace("_", " ")}
                       </span>
                       {o.payment_status !== "paid" && (
@@ -149,14 +186,35 @@ function OrdersPage() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-slate-700">{o.customer_name} · <a href={`tel:${o.customer_phone}`} className="text-blue-600 hover:underline">{o.customer_phone}</a></p>
-                    <p className="text-xs text-slate-500">Placed {new Date(o.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · Pickup {new Date(o.pickup_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {o.customer_name} ·{" "}
+                      <a href={`tel:${o.customer_phone}`} className="text-blue-600 hover:underline">
+                        {o.customer_phone}
+                      </a>
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Placed{" "}
+                      {new Date(o.created_at).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}{" "}
+                      · Pickup{" "}
+                      {new Date(o.pickup_time).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-slate-900">{formatCents(o.total_cents)}</p>
                     {next && (
-                      <Button size="sm" className="mt-2" onClick={() => advance(o)}>
-                        Mark {next.replace("_", " ")}
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        disabled={advancingId === o.id}
+                        onClick={() => advance(o)}
+                      >
+                        {advancingId === o.id ? "…" : `Mark ${next.replace("_", " ")}`}
                       </Button>
                     )}
                   </div>
@@ -165,10 +223,14 @@ function OrdersPage() {
                   {(itemsByOrder[o.id] ?? []).map((it, i) => (
                     <li key={i}>
                       <span className="font-medium">{it.quantity}×</span> {it.name}
-                      {it.special_notes && <span className="text-slate-500 italic"> — {it.special_notes}</span>}
+                      {it.special_notes && (
+                        <span className="text-slate-500 italic"> — {it.special_notes}</span>
+                      )}
                     </li>
                   ))}
-                  {o.order_notes && <li className="text-xs text-slate-500 italic">Notes: {o.order_notes}</li>}
+                  {o.order_notes && (
+                    <li className="text-xs text-slate-500 italic">Notes: {o.order_notes}</li>
+                  )}
                 </ul>
               </div>
             );

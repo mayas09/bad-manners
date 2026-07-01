@@ -4,7 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/lib/use-admin-auth";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { LayoutDashboard, Coffee, Image as ImageIcon, Settings, ShoppingBag, LogOut, ExternalLink } from "lucide-react";
+import {
+  LayoutDashboard,
+  Coffee,
+  Image as ImageIcon,
+  Settings,
+  ShoppingBag,
+  LogOut,
+  ExternalLink,
+} from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -49,7 +57,11 @@ function AdminChrome() {
   }
 
   if (auth.loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">Loading…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">
+        Loading…
+      </div>
+    );
   }
   if (!auth.user) return null;
   if (!auth.isAdmin) {
@@ -57,8 +69,12 @@ function AdminChrome() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
         <div className="max-w-md text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-xl font-semibold text-slate-900">Not authorized</h1>
-          <p className="mt-2 text-sm text-slate-500">Your account is signed in but doesn't have admin access.</p>
-          <Button variant="outline" className="mt-6" onClick={signOut}>Sign out</Button>
+          <p className="mt-2 text-sm text-slate-500">
+            Your account is signed in but doesn't have admin access.
+          </p>
+          <Button variant="outline" className="mt-6" onClick={signOut}>
+            Sign out
+          </Button>
         </div>
       </div>
     );
@@ -90,7 +106,10 @@ function AdminChrome() {
           })}
         </nav>
         <div className="p-3 border-t border-slate-200">
-          <Link to="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-500 hover:bg-slate-100">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-500 hover:bg-slate-100"
+          >
             <ExternalLink className="size-3.5" /> View public site
           </Link>
         </div>
@@ -116,7 +135,11 @@ function AdminChrome() {
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             return (
-              <Link key={item.to} to={item.to} className={`shrink-0 rounded-md px-3 py-1.5 text-xs ${active ? "bg-slate-900 text-white" : "text-slate-600"}`}>
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`shrink-0 rounded-md px-3 py-1.5 text-xs ${active ? "bg-slate-900 text-white" : "text-slate-600"}`}
+              >
                 {item.label}
               </Link>
             );

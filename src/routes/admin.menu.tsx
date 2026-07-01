@@ -9,11 +9,20 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, GripVertical } from "lucide-react";
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -45,24 +54,36 @@ function MenuPage() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("menu_items").select("*").order("section").order("sort_order");
+    const { data } = await supabase
+      .from("menu_items")
+      .select("*")
+      .order("section")
+      .order("sort_order");
     setRows((data ?? []) as MenuRow[]);
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Menu</h1>
-        <p className="text-sm text-slate-500">Drag to reorder. Toggle "Sold Out" to keep an item listed but mark it unavailable.</p>
+        <p className="text-sm text-slate-500">
+          Drag to reorder. Toggle "Sold Out" to keep an item listed but mark it unavailable.
+        </p>
       </div>
       {loading ? (
         <p className="text-sm text-slate-500">Loading…</p>
       ) : (
         <Tabs defaultValue="coffee">
           <TabsList>
-            {SECTIONS.map((s) => <TabsTrigger key={s.id} value={s.id}>{s.label}</TabsTrigger>)}
+            {SECTIONS.map((s) => (
+              <TabsTrigger key={s.id} value={s.id}>
+                {s.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
           {SECTIONS.map((sec) => (
             <TabsContent key={sec.id} value={sec.id} className="mt-4">
@@ -81,8 +102,16 @@ function MenuPage() {
 }
 
 function SectionEditor({
-  section, rows, onChange, reload,
-}: { section: string; rows: MenuRow[]; onChange: React.Dispatch<React.SetStateAction<MenuRow[]>>; reload: () => void }) {
+  section,
+  rows,
+  onChange,
+  reload,
+}: {
+  section: string;
+  rows: MenuRow[];
+  onChange: React.Dispatch<React.SetStateAction<MenuRow[]>>;
+  reload: () => void;
+}) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -91,15 +120,29 @@ function SectionEditor({
   async function addItem() {
     const maxSort = rows.reduce((m, r) => Math.max(m, r.sort_order), 0);
     const { error } = await supabase.from("menu_items").insert({
-      section, name: "New item", price: "", note: "", is_gf_v: false, is_sold_out: false, sort_order: maxSort + 1,
+      section,
+      name: "New item",
+      price: "",
+      note: "",
+      is_gf_v: false,
+      is_sold_out: false,
+      sort_order: maxSort + 1,
     });
     if (error) return toast.error(error.message);
     reload();
   }
   async function saveRow(r: MenuRow) {
-    const { error } = await supabase.from("menu_items").update({
-      name: r.name, price: r.price, note: r.note, is_gf_v: r.is_gf_v, is_sold_out: r.is_sold_out, sort_order: r.sort_order,
-    }).eq("id", r.id);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({
+        name: r.name,
+        price: r.price,
+        note: r.note,
+        is_gf_v: r.is_gf_v,
+        is_sold_out: r.is_sold_out,
+        sort_order: r.sort_order,
+      })
+      .eq("id", r.id);
     if (error) return toast.error(error.message);
     toast.success("Saved");
   }
@@ -131,17 +174,28 @@ function SectionEditor({
       return [...others, ...updates];
     });
     // Persist
-    await Promise.all(
-      updates.map((r) => supabase.from("menu_items").update({ sort_order: r.sort_order }).eq("id", r.id))
+    const results = await Promise.all(
+      updates.map((r) =>
+        supabase.from("menu_items").update({ sort_order: r.sort_order }).eq("id", r.id),
+      ),
     );
-    toast.success("Order saved");
+    if (results.some((r) => r.error)) {
+      toast.error("Failed to save new order — reloading");
+      reload();
+    } else {
+      toast.success("Order saved");
+    }
   }
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">{rows.length} item{rows.length === 1 ? "" : "s"}</p>
-        <Button size="sm" variant="outline" onClick={addItem}><Plus className="size-4 mr-1" /> Add item</Button>
+        <p className="text-sm text-slate-500">
+          {rows.length} item{rows.length === 1 ? "" : "s"}
+        </p>
+        <Button size="sm" variant="outline" onClick={addItem}>
+          <Plus className="size-4 mr-1" /> Add item
+        </Button>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
@@ -165,7 +219,11 @@ function SectionEditor({
 }
 
 function SortableRow({
-  row, onUpdate, onSave, onDelete, onToggleSold,
+  row,
+  onUpdate,
+  onSave,
+  onDelete,
+  onToggleSold,
 }: {
   row: MenuRow;
   onUpdate: (p: Partial<MenuRow>) => void;
@@ -173,20 +231,48 @@ function SortableRow({
   onDelete: () => void;
   onToggleSold: (v: boolean) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.id,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
   return (
-    <div ref={setNodeRef} style={style} className="grid gap-3 sm:grid-cols-12 items-start p-3 rounded-lg border border-slate-200 bg-white">
-      <button type="button" {...attributes} {...listeners} className="sm:col-span-1 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing py-2" aria-label="Drag to reorder">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid gap-3 sm:grid-cols-12 items-start p-3 rounded-lg border border-slate-200 bg-white"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="sm:col-span-1 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing py-2"
+        aria-label="Drag to reorder"
+      >
         <GripVertical className="size-4" />
       </button>
-      <Input className="sm:col-span-3" value={row.name} onChange={(e) => onUpdate({ name: e.target.value })} placeholder="Name" />
-      <Input className="sm:col-span-2" value={row.price ?? ""} onChange={(e) => onUpdate({ price: e.target.value })} placeholder="Price" />
-      <Textarea className="sm:col-span-3" rows={1} value={row.note ?? ""} onChange={(e) => onUpdate({ note: e.target.value })} placeholder="Note / tasting notes" />
+      <Input
+        className="sm:col-span-3"
+        value={row.name}
+        onChange={(e) => onUpdate({ name: e.target.value })}
+        placeholder="Name"
+      />
+      <Input
+        className="sm:col-span-2"
+        value={row.price ?? ""}
+        onChange={(e) => onUpdate({ price: e.target.value })}
+        placeholder="Price"
+      />
+      <Textarea
+        className="sm:col-span-3"
+        rows={1}
+        value={row.note ?? ""}
+        onChange={(e) => onUpdate({ note: e.target.value })}
+        placeholder="Note / tasting notes"
+      />
       <label className="sm:col-span-1 flex items-center gap-1.5 text-xs text-slate-600">
         <Switch checked={row.is_gf_v} onCheckedChange={(v) => onUpdate({ is_gf_v: v })} />
         GF/V
@@ -196,8 +282,12 @@ function SortableRow({
         Sold out
       </label>
       <div className="sm:col-span-1 flex gap-1 justify-end">
-        <Button size="icon" variant="outline" onClick={onSave}><Save className="size-4" /></Button>
-        <Button size="icon" variant="outline" onClick={onDelete}><Trash2 className="size-4 text-red-500" /></Button>
+        <Button size="icon" variant="outline" onClick={onSave}>
+          <Save className="size-4" />
+        </Button>
+        <Button size="icon" variant="outline" onClick={onDelete}>
+          <Trash2 className="size-4 text-red-500" />
+        </Button>
       </div>
     </div>
   );

@@ -41,28 +41,48 @@ export function CartDrawer() {
       <aside className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-background shadow-2xl flex flex-col">
         <header className="flex items-center justify-between p-4 border-b border-[--pink]/20">
           <h2 className="font-display text-2xl">Your cart</h2>
-          <button onClick={() => cart.setOpen(false)} aria-label="Close cart"><X className="size-5" /></button>
+          <button onClick={() => cart.setOpen(false)} aria-label="Close cart">
+            <X className="size-5" />
+          </button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.items.length === 0 && (
-            <p className="text-center text-muted-foreground py-16">Nothing here yet. Add something delicious.</p>
+            <p className="text-center text-muted-foreground py-16">
+              Nothing here yet. Add something delicious.
+            </p>
           )}
           {cart.items.map((it) => (
             <div key={it.id} className="glass rounded-xl p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-display text-lg truncate">{it.name}</p>
-                  <p className="text-sm text-fire font-semibold">{formatCents(it.unit_price_cents)}</p>
+                  <p className="text-sm text-fire font-semibold">
+                    {formatCents(it.unit_price_cents)}
+                  </p>
                 </div>
-                <button onClick={() => cart.remove(it.id)} className="text-muted-foreground hover:text-red-600 p-1" aria-label="Remove">
+                <button
+                  onClick={() => cart.remove(it.id)}
+                  className="text-muted-foreground hover:text-red-600 p-1"
+                  aria-label="Remove"
+                >
                   <Trash2 className="size-4" />
                 </button>
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <button onClick={() => cart.updateQty(it.id, it.quantity - 1)} className="grid size-8 place-items-center rounded-full border border-[--pink]/40"><Minus className="size-3" /></button>
+                <button
+                  onClick={() => cart.updateQty(it.id, it.quantity - 1)}
+                  className="grid size-8 place-items-center rounded-full border border-[--pink]/40"
+                >
+                  <Minus className="size-3" />
+                </button>
                 <span className="w-8 text-center font-semibold">{it.quantity}</span>
-                <button onClick={() => cart.updateQty(it.id, it.quantity + 1)} className="grid size-8 place-items-center rounded-full border border-[--pink]/40"><Plus className="size-3" /></button>
+                <button
+                  onClick={() => cart.updateQty(it.id, it.quantity + 1)}
+                  className="grid size-8 place-items-center rounded-full border border-[--pink]/40"
+                >
+                  <Plus className="size-3" />
+                </button>
               </div>
               <input
                 type="text"
@@ -81,12 +101,19 @@ export function CartDrawer() {
             <span>Subtotal</span>
             <span className="text-fire">{formatCents(cart.subtotalCents)}</span>
           </div>
-          <Button disabled={cart.items.length === 0} onClick={handleCheckout} className="w-full h-12 bg-fire text-white text-base">
+          <Button
+            disabled={cart.items.length === 0}
+            onClick={handleCheckout}
+            className="w-full h-12 bg-fire text-white text-base"
+          >
             {auth.user ? "Checkout" : "Sign in to checkout"}
           </Button>
           {!auth.user && (
             <p className="text-center text-xs text-muted-foreground">
-              New here? <Link to="/account/signup" className="text-fire underline">Create an account</Link>
+              New here?{" "}
+              <Link to="/account/signup" className="text-fire underline">
+                Create an account
+              </Link>
             </p>
           )}
         </footer>

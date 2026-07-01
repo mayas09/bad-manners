@@ -1,4 +1,10 @@
-export type MenuItem = { id?: string; name: string; price?: string; note?: string; is_sold_out?: boolean };
+export type MenuItem = {
+  id?: string;
+  name: string;
+  price?: string;
+  note?: string;
+  is_sold_out?: boolean;
+};
 export type MenuSection = {
   id: string;
   title: string;
@@ -43,7 +49,10 @@ export const MENU: MenuSection[] = [
       { name: "Ambrosia Black", note: "Tasting Notes: Hawthorn Berries, Baked Peach, Mead" },
       { name: "Crescent Green", note: "Tasting Notes: Sandalwood, Apricot, Honeycomb" },
       { name: "Sunstone Black", note: "Tasting Notes: Honey, Dark Cocoa, Apricot" },
-      { name: "Malabar Herbal", note: "Tasting Notes: Ginger, Malabar Black Peppercorn, Turmeric, Lemongrass, Licorice Root" },
+      {
+        name: "Malabar Herbal",
+        note: "Tasting Notes: Ginger, Malabar Black Peppercorn, Turmeric, Lemongrass, Licorice Root",
+      },
       { name: "Rosella Herbal Tonic", note: "Tasting Notes: Hibiscus, Lemongrass, Licorice Root" },
     ],
     footer: [

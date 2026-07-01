@@ -33,32 +33,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setItems(JSON.parse(raw));
-    } catch {}
+    } catch {
+      /* localStorage unavailable or corrupted cart data */
+    }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch {}
+    try {
+      localStorage.setItem(KEY, JSON.stringify(items));
+    } catch {
+      /* localStorage unavailable (e.g. private browsing) */
+    }
   }, [items, hydrated]);
 
-  const value = useMemo<CartCtx>(() => ({
-    items,
-    count: items.reduce((s, i) => s + i.quantity, 0),
-    subtotalCents: items.reduce((s, i) => s + i.quantity * i.unit_price_cents, 0),
-    add: (it) => setItems((prev) => {
-      const qty = it.quantity ?? 1;
-      const existing = prev.find((p) => p.id === it.id);
-      if (existing) return prev.map((p) => p.id === it.id ? { ...p, quantity: p.quantity + qty } : p);
-      return [...prev, { ...it, quantity: qty }];
+  const value = useMemo<CartCtx>(
+    () => ({
+      items,
+      count: items.reduce((s, i) => s + i.quantity, 0),
+      subtotalCents: items.reduce((s, i) => s + i.quantity * i.unit_price_cents, 0),
+      add: (it) =>
+        setItems((prev) => {
+          const qty = it.quantity ?? 1;
+          const existing = prev.find((p) => p.id === it.id);
+          if (existing)
+            return prev.map((p) => (p.id === it.id ? { ...p, quantity: p.quantity + qty } : p));
+          return [...prev, { ...it, quantity: qty }];
+        }),
+      updateQty: (id, qty) =>
+        setItems((prev) =>
+          qty <= 0
+            ? prev.filter((p) => p.id !== id)
+            : prev.map((p) => (p.id === id ? { ...p, quantity: qty } : p)),
+        ),
+      updateNotes: (id, notes) =>
+        setItems((prev) => prev.map((p) => (p.id === id ? { ...p, special_notes: notes } : p))),
+      remove: (id) => setItems((prev) => prev.filter((p) => p.id !== id)),
+      clear: () => setItems([]),
+      isOpen,
+      setOpen,
     }),
-    updateQty: (id, qty) => setItems((prev) => qty <= 0 ? prev.filter((p) => p.id !== id) : prev.map((p) => p.id === id ? { ...p, quantity: qty } : p)),
-    updateNotes: (id, notes) => setItems((prev) => prev.map((p) => p.id === id ? { ...p, special_notes: notes } : p)),
-    remove: (id) => setItems((prev) => prev.filter((p) => p.id !== id)),
-    clear: () => setItems([]),
-    isOpen,
-    setOpen,
-  }), [items, isOpen]);
+    [items, isOpen],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

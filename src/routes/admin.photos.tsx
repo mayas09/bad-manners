@@ -55,13 +55,21 @@ async function readImageMeta(file: File): Promise<{ width: number; height: numbe
 function PhotosPage() {
   const [rows, setRows] = useState<ImgRow[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [meta, setMeta] = useState<Record<string, { width: number; height: number; size: number }>>({});
+  const [meta, setMeta] = useState<Record<string, { width: number; height: number; size: number }>>(
+    {},
+  );
 
   async function load() {
-    const { data } = await supabase.from("site_images").select("*").order("category").order("sort_order");
+    const { data } = await supabase
+      .from("site_images")
+      .select("*")
+      .order("category")
+      .order("sort_order");
     setRows((data ?? []) as ImgRow[]);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function upload(slotKey: string, file: File) {
     if (!file.type.startsWith("image/")) {
@@ -80,16 +88,27 @@ function PhotosPage() {
           fileType: file.type === "image/png" ? "image/png" : "image/jpeg",
         });
       } catch {
+        toast.warning("Compression failed — uploading original file uncompressed.");
         compressed = file;
       }
       const m = await readImageMeta(compressed).catch(() => null);
 
       const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const path = `${slotKey}/${Date.now()}-${safeName}`;
-      const up = await supabase.storage.from("site-images").upload(path, compressed, { upsert: true, contentType: compressed.type });
-      if (up.error) { toast.error(up.error.message); return; }
-      const signed = await supabase.storage.from("site-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-      if (signed.error || !signed.data) { toast.error(signed.error?.message ?? "Failed to sign URL"); return; }
+      const up = await supabase.storage
+        .from("site-images")
+        .upload(path, compressed, { upsert: true, contentType: compressed.type });
+      if (up.error) {
+        toast.error(up.error.message);
+        return;
+      }
+      const signed = await supabase.storage
+        .from("site-images")
+        .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (signed.error || !signed.data) {
+        toast.error(signed.error?.message ?? "Failed to sign URL");
+        return;
+      }
 
       const existing = rows.find((r) => r.key === slotKey);
       const payload = {
@@ -105,11 +124,18 @@ function PhotosPage() {
           await supabase.storage.from("site-images").remove([existing.storage_path]);
         }
       } else {
-        resp = await supabase.from("site_images").insert({ ...payload, sort_order: IMAGE_SLOTS.findIndex((s) => s.key === slotKey) + 1 });
+        resp = await supabase
+          .from("site_images")
+          .insert({ ...payload, sort_order: IMAGE_SLOTS.findIndex((s) => s.key === slotKey) + 1 });
       }
-      if (resp.error) { toast.error(resp.error.message); return; }
+      if (resp.error) {
+        toast.error(resp.error.message);
+        return;
+      }
       if (m) setMeta((s) => ({ ...s, [slotKey]: m }));
-      toast.success(`Uploaded · ${m ? `${m.width}×${m.height} · ${formatBytes(m.size)}` : formatBytes(compressed.size)}`);
+      toast.success(
+        `Uploaded · ${m ? `${m.width}×${m.height} · ${formatBytes(m.size)}` : formatBytes(compressed.size)}`,
+      );
       load();
     } finally {
       setUploading(null);
@@ -120,10 +146,15 @@ function PhotosPage() {
     const existing = rows.find((r) => r.key === slotKey);
     if (!existing) return;
     if (!confirm("Remove this image?")) return;
-    if (existing.storage_path) await supabase.storage.from("site-images").remove([existing.storage_path]);
+    if (existing.storage_path)
+      await supabase.storage.from("site-images").remove([existing.storage_path]);
     const { error } = await supabase.from("site_images").delete().eq("key", slotKey);
     if (error) return toast.error(error.message);
-    setMeta((s) => { const c = { ...s }; delete c[slotKey]; return c; });
+    setMeta((s) => {
+      const c = { ...s };
+      delete c[slotKey];
+      return c;
+    });
     load();
   }
 
@@ -131,7 +162,10 @@ function PhotosPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Photos</h1>
-        <p className="text-sm text-slate-500">Drop an image on a slot or click to upload. Images are automatically compressed before saving.</p>
+        <p className="text-sm text-slate-500">
+          Drop an image on a slot or click to upload. Images are automatically compressed before
+          saving.
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {IMAGE_SLOTS.map((slot) => {
@@ -154,7 +188,12 @@ function PhotosPage() {
 }
 
 function PhotoSlot({
-  label, row, uploading, meta, onUpload, onClear,
+  label,
+  row,
+  uploading,
+  meta,
+  onUpload,
+  onClear,
 }: {
   label: string;
   row: ImgRow | undefined;
@@ -177,7 +216,10 @@ function PhotoSlot({
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
       <p className="text-sm font-medium text-slate-900">{label}</p>
       <div
-        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
         onDragLeave={() => setDrag(false)}
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
@@ -186,7 +228,7 @@ function PhotoSlot({
         }`}
       >
         {row?.url ? (
-          <img src={row.url} alt="" className="h-full w-full object-cover" />
+          <img src={row.url} alt={label} className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full grid place-items-center text-xs text-slate-400">
             Drop image here or click to upload
@@ -206,14 +248,27 @@ function PhotoSlot({
       <div className="mt-3 flex gap-2">
         <input
           ref={inputRef}
-          type="file" accept="image/*" className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUpload(f);
+            e.currentTarget.value = "";
+          }}
         />
-        <Button variant="outline" size="sm" className="flex-1" onClick={() => inputRef.current?.click()}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => inputRef.current?.click()}
+        >
           <Upload className="size-4 mr-1.5" /> {row ? "Replace" : "Upload"}
         </Button>
         {row && (
-          <Button size="icon" variant="outline" onClick={onClear}><Trash2 className="size-4 text-red-500" /></Button>
+          <Button size="icon" variant="outline" onClick={onClear}>
+            <Trash2 className="size-4 text-red-500" />
+          </Button>
         )}
       </div>
     </div>

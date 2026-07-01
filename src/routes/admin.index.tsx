@@ -8,12 +8,20 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function Overview() {
-  const [stats, setStats] = useState<{ menuCount: number; lastUpdated: string | null; inquiryCount: number } | null>(null);
+  const [stats, setStats] = useState<{
+    menuCount: number;
+    lastUpdated: string | null;
+    inquiryCount: number;
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
       const [menu, inquiries] = await Promise.all([
-        supabase.from("menu_items").select("updated_at", { count: "exact" }).order("updated_at", { ascending: false }).limit(1),
+        supabase
+          .from("menu_items")
+          .select("updated_at", { count: "exact" })
+          .order("updated_at", { ascending: false })
+          .limit(1),
         supabase.from("catering_inquiries").select("id", { count: "exact", head: true }),
       ]);
       setStats({
@@ -25,14 +33,28 @@ function Overview() {
   }, []);
 
   const cards = [
-    { label: "Menu items", value: stats?.menuCount ?? "…", icon: Coffee, hint: "Across all sections" },
+    {
+      label: "Menu items",
+      value: stats?.menuCount ?? "…",
+      icon: Coffee,
+      hint: "Across all sections",
+    },
     {
       label: "Menu last updated",
-      value: stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : stats ? "Never" : "…",
+      value: stats?.lastUpdated
+        ? new Date(stats.lastUpdated).toLocaleString()
+        : stats
+          ? "Never"
+          : "…",
       icon: Clock,
       hint: "Most recent menu change",
     },
-    { label: "Contact form submissions", value: stats?.inquiryCount ?? "…", icon: Inbox, hint: "Catering / event inquiries" },
+    {
+      label: "Contact form submissions",
+      value: stats?.inquiryCount ?? "…",
+      icon: Inbox,
+      hint: "Catering / event inquiries",
+    },
   ];
 
   return (
@@ -50,7 +72,9 @@ function Overview() {
                 <p className="text-xs uppercase tracking-wide text-slate-500">{c.label}</p>
                 <Icon className="size-4 text-slate-400" />
               </div>
-              <p className="mt-3 text-2xl font-semibold text-slate-900 break-words">{String(c.value)}</p>
+              <p className="mt-3 text-2xl font-semibold text-slate-900 break-words">
+                {String(c.value)}
+              </p>
               <p className="mt-1 text-xs text-slate-400">{c.hint}</p>
             </div>
           );

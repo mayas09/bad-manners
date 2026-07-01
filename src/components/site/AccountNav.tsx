@@ -11,7 +11,9 @@ export function AccountNav() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fn = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const fn = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
@@ -20,7 +22,10 @@ export function AccountNav() {
 
   if (!auth.user) {
     return (
-      <Link to="/account/login" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium hover:text-[--pink-deep]">
+      <Link
+        to="/account/login"
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium hover:text-[--pink-deep]"
+      >
         <User className="size-4" /> Sign in
       </Link>
     );
@@ -31,8 +36,13 @@ export function AccountNav() {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((s) => !s)} className="flex items-center gap-2 rounded-full glass px-2.5 py-1.5 text-sm hover:ring-1 ring-[--pink]/40">
-        <span className="grid size-7 place-items-center rounded-full bg-fire text-white text-xs font-semibold">{initial}</span>
+      <button
+        onClick={() => setOpen((s) => !s)}
+        className="flex items-center gap-2 rounded-full glass px-2.5 py-1.5 text-sm hover:ring-1 ring-[--pink]/40"
+      >
+        <span className="grid size-7 place-items-center rounded-full bg-fire text-white text-xs font-semibold">
+          {initial}
+        </span>
         <span className="hidden sm:inline font-medium max-w-24 truncate">{first}</span>
       </button>
       {open && (
@@ -40,10 +50,21 @@ export function AccountNav() {
           <div className="px-3 py-2 border-b border-slate-100">
             <p className="text-xs text-muted-foreground truncate">{auth.user.email}</p>
           </div>
-          <Link to="/account" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50">
+          <Link
+            to="/account"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+          >
             <OrdersIcon className="size-4" /> My Orders
           </Link>
-          <button onClick={async () => { await supabase.auth.signOut(); setOpen(false); navigate({ to: "/" }); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 text-red-600">
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              setOpen(false);
+              navigate({ to: "/" });
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 text-red-600"
+          >
             <LogOut className="size-4" /> Sign out
           </button>
         </div>

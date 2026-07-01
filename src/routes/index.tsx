@@ -5,13 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Coffee, Flame, MapPin, Clock, Instagram, Facebook, Heart, PawPrint,
-  Sparkles, Gift, Menu as MenuIcon, X,
+  Sparkles, Gift, Menu as MenuIcon, X, Plus,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
 import { useReveal } from "@/components/site/use-reveal";
 import { CateringForm } from "@/components/site/CateringForm";
 import { useSiteContent } from "@/components/site/use-site-content";
+import { CartProvider, useCart } from "@/lib/cart-context";
+import { CartButton, CartDrawer } from "@/components/site/CartDrawer";
+import { AccountNav } from "@/components/site/AccountNav";
+import { parsePriceToCents, formatCents } from "@/lib/price-utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,19 +37,23 @@ function Home() {
   const content = useSiteContent();
   const { photos: PHOTOS, menu: MENU, info: INFO, hours: HOURS } = content;
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
-      <BgFlourishes />
-      <Nav />
-      <Hero photos={PHOTOS} />
-      <Story photos={PHOTOS} />
-      <MenuSection menu={MENU} />
-      <Gallery photos={PHOTOS} />
-      <Community photos={PHOTOS} />
-      <Visit info={INFO} hours={HOURS} />
-      <GiftAndCatering info={INFO} />
-      <Footer info={INFO} />
-      <Toaster richColors position="top-center" />
-    </div>
+    <CartProvider>
+      <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
+        <BgFlourishes />
+        <Nav />
+        <Hero photos={PHOTOS} />
+        <Story photos={PHOTOS} />
+        <MenuSection menu={MENU} />
+        <Gallery photos={PHOTOS} />
+        <Community photos={PHOTOS} />
+        <Visit info={INFO} hours={HOURS} />
+        <GiftAndCatering info={INFO} />
+        <Footer info={INFO} />
+        <CartButton />
+        <CartDrawer />
+        <Toaster richColors position="top-center" />
+      </div>
+    </CartProvider>
   );
 }
 
@@ -96,13 +105,17 @@ function Nav() {
                 {l.label}
               </a>
             ))}
+            <AccountNav />
             <Button asChild className="bg-fire text-white hover:opacity-95">
               <a href="#visit"><MapPin className="mr-1.5 size-4" />Find Us</a>
             </Button>
           </nav>
-          <button className="md:hidden p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
-            {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
-          </button>
+          <div className="md:hidden flex items-center gap-1">
+            <AccountNav />
+            <button className="p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
+              {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
+            </button>
+          </div>
         </div>
         {open && (
           <div className="md:hidden mt-2 glass rounded-2xl p-4 grid gap-3">
@@ -237,6 +250,21 @@ function Story({ photos: PHOTOS }: { photos: SiteImages }) {
 
 /* --------------------------------- menu --------------------------------- */
 
+function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; cents: number }) {
+  const cart = useCart();
+  return (
+    <button
+      onClick={() => {
+        cart.add({ id: item.id ? `menu:${item.id}` : `name:${item.name}`, name: item.name, unit_price_cents: cents });
+        toast.success(`${item.name} added — ${formatCents(cents)}`, { duration: 1600 });
+      }}
+      className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-[--pink]/40 bg-white/60 hover:bg-fire hover:text-white hover:border-transparent px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+    >
+      <Plus className="size-3.5" /> Add to cart
+    </button>
+  );
+}
+
 function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data").MenuSection[] }) {
   return (
     <section id="menu" className="relative py-24 sm:py-32" style={{ background: "linear-gradient(180deg, transparent, color-mix(in oklch, var(--pink) 6%, transparent), transparent)" }}>
@@ -268,24 +296,31 @@ function MenuSection({ menu: MENU }: { menu: import("@/components/site/menu-data
             <TabsContent key={s.id} value={s.id} className="mt-10">
               {s.blurb && <p className="text-center font-serif italic text-muted-foreground mb-8">{s.blurb}</p>}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {s.items.map((item, i) => (
-                  <div key={i} className={`tilt-card glass rounded-2xl p-5 flex items-start justify-between gap-4 ${item.is_sold_out ? "opacity-70" : ""}`}>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-display text-xl leading-tight">{item.name}</h3>
-                        {item.is_sold_out && (
-                          <span className="inline-flex items-center rounded-full border border-[--pink-deep] bg-[--pink-deep]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[--pink-deep]">
-                            Sold Out
-                          </span>
+                {s.items.map((item, i) => {
+                  const cents = parsePriceToCents(item.price);
+                  const canOrder = !!cents && !item.is_sold_out;
+                  return (
+                    <div key={item.id ?? i} className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 ${item.is_sold_out ? "opacity-70" : ""}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-display text-xl leading-tight">{item.name}</h3>
+                            {item.is_sold_out && (
+                              <span className="inline-flex items-center rounded-full border border-[--pink-deep] bg-[--pink-deep]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[--pink-deep]">
+                                Sold Out
+                              </span>
+                            )}
+                          </div>
+                          {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
+                        </div>
+                        {item.price && (
+                          <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
                         )}
                       </div>
-                      {item.note && <p className="mt-1 text-sm text-muted-foreground font-serif italic">{item.note}</p>}
+                      {canOrder && <AddToCartBtn item={item} cents={cents!} />}
                     </div>
-                    {item.price && (
-                      <span className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}>{item.price}</span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {s.footer && (
                 <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">

@@ -21,6 +21,7 @@ import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
+import { Route as AccountResetPasswordRouteImport } from './routes/account.reset-password'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
 
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -83,6 +84,11 @@ const AccountSignupRoute = AccountSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountResetPasswordRoute = AccountResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AccountRoute,
+} as any)
 const AccountLoginRoute = AccountLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/checkout'
     | '/account/login'
+    | '/account/reset-password'
     | '/account/signup'
     | '/admin/info'
     | '/admin/menu'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/'
     | '/checkout'
     | '/account/login'
+    | '/account/reset-password'
     | '/account/signup'
     | '/admin/info'
     | '/admin/menu'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/checkout'
     | '/account/login'
+    | '/account/reset-password'
     | '/account/signup'
     | '/admin/info'
     | '/admin/menu'
@@ -273,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountSignupRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/reset-password': {
+      id: '/account/reset-password'
+      path: '/reset-password'
+      fullPath: '/account/reset-password'
+      preLoaderRoute: typeof AccountResetPasswordRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/account/login': {
       id: '/account/login'
       path: '/login'
@@ -285,12 +304,14 @@ declare module '@tanstack/react-router' {
 
 interface AccountRouteChildren {
   AccountLoginRoute: typeof AccountLoginRoute
+  AccountResetPasswordRoute: typeof AccountResetPasswordRoute
   AccountSignupRoute: typeof AccountSignupRoute
   AccountIndexRoute: typeof AccountIndexRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
   AccountLoginRoute: AccountLoginRoute,
+  AccountResetPasswordRoute: AccountResetPasswordRoute,
   AccountSignupRoute: AccountSignupRoute,
   AccountIndexRoute: AccountIndexRoute,
 }

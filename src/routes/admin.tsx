@@ -27,18 +27,6 @@ const NAV = [
 ] as const;
 
 function AdminLayout() {
-  const path = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthPage = path === "/admin/login" || path === "/admin/reset-password";
-
-  if (isAuthPage) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <Outlet />
-        <Toaster richColors position="top-center" theme="dark" />
-      </div>
-    );
-  }
-
   return <AdminChrome />;
 }
 
@@ -48,12 +36,12 @@ function AdminChrome() {
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    if (!auth.loading && !auth.user) navigate({ to: "/admin/login" });
-  }, [auth.loading, auth.user, navigate]);
+    if (!auth.loading && !auth.user) navigate({ to: "/account/login", search: { next: path } as any });
+  }, [auth.loading, auth.user, navigate, path]);
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate({ to: "/admin/login" });
+    navigate({ to: "/account/login" });
   }
 
   if (auth.loading) {
@@ -70,11 +58,16 @@ function AdminChrome() {
         <div className="max-w-md text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-xl font-semibold text-slate-900">Not authorized</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Your account is signed in but doesn't have admin access.
+            Your account doesn't have admin access.
           </p>
-          <Button variant="outline" className="mt-6" onClick={signOut}>
-            Sign out
-          </Button>
+          <div className="mt-6 flex gap-2 justify-center">
+            <Button variant="outline" onClick={() => navigate({ to: "/account" })}>
+              Go to my account
+            </Button>
+            <Button variant="ghost" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
         </div>
       </div>
     );

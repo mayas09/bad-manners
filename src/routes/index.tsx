@@ -766,12 +766,7 @@ function Footer({ info }: { info: SiteInfo }) {
       <div className="border-t border-[--pink]/15">
         <div className="mx-auto max-w-7xl px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Bad Manners Coffee. All rights reserved.</p>
-          <p className="flex items-center gap-4">
-            <Link to="/admin/login" className="hover:text-[--pink-deep]">
-              Admin
-            </Link>
-            <span className="font-display">Be kind. Be a little bad.</span>
-          </p>
+          <p className="font-display">Be kind. Be a little bad.</p>
         </div>
       </div>
     </footer>

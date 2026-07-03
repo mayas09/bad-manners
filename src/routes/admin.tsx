@@ -27,18 +27,6 @@ const NAV = [
 ] as const;
 
 function AdminLayout() {
-  const path = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthPage = path === "/admin/login" || path === "/admin/reset-password";
-
-  if (isAuthPage) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <Outlet />
-        <Toaster richColors position="top-center" theme="dark" />
-      </div>
-    );
-  }
-
   return <AdminChrome />;
 }
 
@@ -48,12 +36,12 @@ function AdminChrome() {
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    if (!auth.loading && !auth.user) navigate({ to: "/admin/login" });
-  }, [auth.loading, auth.user, navigate]);
+    if (!auth.loading && !auth.user) navigate({ to: "/account/login", search: { next: path } as any });
+  }, [auth.loading, auth.user, navigate, path]);
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate({ to: "/admin/login" });
+    navigate({ to: "/account/login" });
   }
 
   if (auth.loading) {

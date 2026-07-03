@@ -16,11 +16,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
-import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
 import { Route as AdminPhotosRouteImport } from './routes/admin.photos'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
@@ -60,11 +58,6 @@ const OrderOrderIdRoute = OrderOrderIdRouteImport.update({
   path: '/order/$orderId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminPhotosRoute = AdminPhotosRouteImport.update({
   id: '/photos',
   path: '/photos',
@@ -78,11 +71,6 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
 const AdminMenuRoute = AdminMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminInfoRoute = AdminInfoRouteImport.update({
@@ -109,11 +97,9 @@ export interface FileRoutesByFullPath {
   '/account/login': typeof AccountLoginRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
-  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -124,11 +110,9 @@ export interface FileRoutesByTo {
   '/account/login': typeof AccountLoginRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
-  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -142,11 +126,9 @@ export interface FileRoutesById {
   '/account/login': typeof AccountLoginRoute
   '/account/signup': typeof AccountSignupRoute
   '/admin/info': typeof AdminInfoRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
-  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -161,11 +143,9 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/signup'
     | '/admin/info'
-    | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
-    | '/admin/reset-password'
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
@@ -176,11 +156,9 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/signup'
     | '/admin/info'
-    | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
-    | '/admin/reset-password'
     | '/order/$orderId'
     | '/account'
     | '/admin'
@@ -193,11 +171,9 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/signup'
     | '/admin/info'
-    | '/admin/login'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
-    | '/admin/reset-password'
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
@@ -262,13 +238,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/reset-password': {
-      id: '/admin/reset-password'
-      path: '/reset-password'
-      fullPath: '/admin/reset-password'
-      preLoaderRoute: typeof AdminResetPasswordRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/photos': {
       id: '/admin/photos'
       path: '/photos'
@@ -288,13 +257,6 @@ declare module '@tanstack/react-router' {
       path: '/menu'
       fullPath: '/admin/menu'
       preLoaderRoute: typeof AdminMenuRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/info': {
@@ -338,21 +300,17 @@ const AccountRouteWithChildren =
 
 interface AdminRouteChildren {
   AdminInfoRoute: typeof AdminInfoRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   AdminMenuRoute: typeof AdminMenuRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPhotosRoute: typeof AdminPhotosRoute
-  AdminResetPasswordRoute: typeof AdminResetPasswordRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminInfoRoute: AdminInfoRoute,
-  AdminLoginRoute: AdminLoginRoute,
   AdminMenuRoute: AdminMenuRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPhotosRoute: AdminPhotosRoute,
-  AdminResetPasswordRoute: AdminResetPasswordRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

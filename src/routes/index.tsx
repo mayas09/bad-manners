@@ -23,7 +23,7 @@ import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
 import { useReveal } from "@/components/site/use-reveal";
 import { CateringForm } from "@/components/site/CateringForm";
 import { useSiteContent } from "@/components/site/use-site-content";
-import { CartProvider, useCart } from "@/lib/cart-context";
+import { useCart } from "@/lib/cart-context";
 import { CartButton, CartDrawer } from "@/components/site/CartDrawer";
 import { AccountNav } from "@/components/site/AccountNav";
 import { parsePriceToCents, formatCents } from "@/lib/price-utils";
@@ -56,23 +56,21 @@ function Home() {
   const content = useSiteContent();
   const { photos: PHOTOS, menu: MENU, info: INFO, hours: HOURS } = content;
   return (
-    <CartProvider>
-      <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
-        <BgFlourishes />
-        <Nav />
-        <Hero photos={PHOTOS} />
-        <Story photos={PHOTOS} />
-        <MenuSection menu={MENU} />
-        <Gallery photos={PHOTOS} />
-        <Community photos={PHOTOS} />
-        <Visit info={INFO} hours={HOURS} />
-        <GiftAndCatering info={INFO} />
-        <Footer info={INFO} />
-        <CartButton />
-        <CartDrawer />
-        <Toaster richColors position="top-center" />
-      </div>
-    </CartProvider>
+    <div className="relative min-h-screen overflow-x-clip bg-background text-foreground">
+      <BgFlourishes />
+      <Nav />
+      <Hero photos={PHOTOS} />
+      <Story photos={PHOTOS} />
+      <MenuSection menu={MENU} />
+      <Gallery photos={PHOTOS} />
+      <Community photos={PHOTOS} />
+      <Visit info={INFO} hours={HOURS} />
+      <GiftAndCatering info={INFO} />
+      <Footer info={INFO} />
+      <CartButton />
+      <CartDrawer />
+      <Toaster richColors position="top-center" />
+    </div>
   );
 }
 

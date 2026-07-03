@@ -172,6 +172,10 @@ function CheckoutPage() {
           <div>
             <h1 className="font-display text-3xl">Checkout</h1>
             <p className="text-sm text-muted-foreground">Pickup only. Pay securely with Stripe.</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-900">
+              <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+              Stripe TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC
+            </div>
           </div>
           <section className="glass rounded-2xl p-5 space-y-3">
             <h2 className="font-display text-xl">Your details</h2>

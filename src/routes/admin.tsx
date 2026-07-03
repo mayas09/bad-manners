@@ -58,11 +58,16 @@ function AdminChrome() {
         <div className="max-w-md text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-xl font-semibold text-slate-900">Not authorized</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Your account is signed in but doesn't have admin access.
+            Your account doesn't have admin access.
           </p>
-          <Button variant="outline" className="mt-6" onClick={signOut}>
-            Sign out
-          </Button>
+          <div className="mt-6 flex gap-2 justify-center">
+            <Button variant="outline" onClick={() => navigate({ to: "/account" })}>
+              Go to my account
+            </Button>
+            <Button variant="ghost" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
         </div>
       </div>
     );

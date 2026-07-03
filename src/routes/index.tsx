@@ -23,7 +23,7 @@ import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
 import { useReveal } from "@/components/site/use-reveal";
 import { CateringForm } from "@/components/site/CateringForm";
 import { useSiteContent } from "@/components/site/use-site-content";
-import { CartProvider, useCart } from "@/lib/cart-context";
+import { useCart } from "@/lib/cart-context";
 import { CartButton, CartDrawer } from "@/components/site/CartDrawer";
 import { AccountNav } from "@/components/site/AccountNav";
 import { parsePriceToCents, formatCents } from "@/lib/price-utils";

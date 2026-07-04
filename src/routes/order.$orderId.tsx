@@ -69,6 +69,8 @@ function OrderPage() {
     );
 
   const paid = order.payment_status === "paid";
+  const payOnPickup = order.payment_status === "pay_on_pickup";
+  const confirmed = paid || payOnPickup;
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,13 +86,17 @@ function OrderPage() {
       </header>
       <main className="mx-auto max-w-3xl px-4 py-10">
         <div className="text-center">
-          {paid ? (
+          {confirmed ? (
             <CheckCircle2 className="mx-auto size-14 text-emerald-500" />
           ) : (
             <Clock className="mx-auto size-14 text-amber-500" />
           )}
           <h1 className="mt-4 font-display text-4xl">
-            {paid ? "Order confirmed!" : "Payment pending"}
+            {paid
+              ? "Order confirmed!"
+              : payOnPickup
+                ? "Order confirmed — pay at pickup!"
+                : "Payment pending"}
           </h1>
           <p className="mt-2 text-lg text-muted-foreground">
             Order <span className="font-display text-fire">#{order.order_number}</span> ·{" "}

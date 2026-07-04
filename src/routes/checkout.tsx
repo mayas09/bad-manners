@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/price-utils";
@@ -65,6 +66,7 @@ function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [pickup, setPickup] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "pickup">("stripe");
 
   useEffect(() => {
     if (!auth.loading && !auth.user)
@@ -112,6 +114,7 @@ function CheckoutPage() {
           total_cents: subtotal,
           pickup_time: pickup,
           order_notes: notes || null,
+          ...(paymentMethod === "pickup" ? { payment_status: "pay_on_pickup" as const } : {}),
         })
         .select("id")
         .single();
@@ -135,6 +138,12 @@ function CheckoutPage() {
         return;
       }
 
+      if (paymentMethod === "pickup") {
+        cart.clear();
+        nav({ to: "/order/$orderId", params: { orderId: order.id } });
+        return;
+      }
+      
       const res = await createSession({
         data: { orderId: order.id, originUrl: window.location.origin },
       });
@@ -171,11 +180,15 @@ function CheckoutPage() {
         <form onSubmit={placeOrder} className="space-y-6">
           <div>
             <h1 className="font-display text-3xl">Checkout</h1>
-            <p className="text-sm text-muted-foreground">Pickup only. Pay securely with Stripe.</p>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-900">
-              <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-              Stripe TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Pickup only. Pay now with Stripe, or pay in person at pickup.
+            </p>
+            {paymentMethod === "stripe" && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-900">
+                <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                Stripe TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC
+              </div>
+            )}
           </div>
           <section className="glass rounded-2xl p-5 space-y-3">
             <h2 className="font-display text-xl">Your details</h2>
@@ -228,12 +241,57 @@ function CheckoutPage() {
               placeholder="Anything the barista should know?"
             />
           </section>
+          <section className="glass rounded-2xl p-5 space-y-3">
+            <h2 className="font-display text-xl">How would you like to pay?</h2>
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={(v) => setPaymentMethod(v as "stripe" | "pickup")}
+              className="grid gap-3 sm:grid-cols-2"
+            >
+              <label
+                htmlFor="pay-stripe"
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                  paymentMethod === "stripe"
+                    ? "border-fire bg-fire/5"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <RadioGroupItem value="stripe" id="pay-stripe" className="mt-1" />
+                <span>
+                  <span className="block font-semibold text-slate-900">Pay now</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Pay securely online with Stripe.
+                  </span>
+                </span>
+              </label>
+              <label
+                htmlFor="pay-pickup"
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                  paymentMethod === "pickup"
+                    ? "border-fire bg-fire/5"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <RadioGroupItem value="pickup" id="pay-pickup" className="mt-1" />
+                <span>
+                  <span className="block font-semibold text-slate-900">Pay on pickup</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Reserve your order and pay in person at the counter.
+                  </span>
+                </span>
+              </label>
+            </RadioGroup>
+          </section>
           <Button
             type="submit"
             disabled={busy || cart.items.length === 0 || slots.length === 0}
             className="w-full h-12 bg-fire text-white text-base"
           >
-            {busy ? "Preparing…" : `Pay ${formatCents(cart.subtotalCents)} with Stripe`}
+            {busy
+              ? "Preparing…"
+              : paymentMethod === "stripe"
+                ? `Pay ${formatCents(cart.subtotalCents)} with Stripe`
+                : `Place order — pay ${formatCents(cart.subtotalCents)} at pickup`}
           </Button>
         </form>
 

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/price-utils";
@@ -67,6 +68,18 @@ function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [pickup, setPickup] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "pickup">("stripe");
+  const [redeemFreeDrink, setRedeemFreeDrink] = useState(false);
+
+  const freeDrinksAvailable = auth.profile?.free_drinks_available ?? 0;
+
+  const cheapestItem = useMemo(() => {
+    if (cart.items.length === 0) return null;
+    return cart.items.reduce((min, it) => (it.unit_price_cents < min.unit_price_cents ? it : min));
+  }, [cart.items]);
+
+  const discountCents =
+    redeemFreeDrink && freeDrinksAvailable > 0 && cheapestItem ? cheapestItem.unit_price_cents : 0;
+  const discountedTotalCents = Math.max(0, cart.subtotalCents - discountCents);
 
   useEffect(() => {
     if (!auth.loading && !auth.user)
@@ -103,6 +116,8 @@ function CheckoutPage() {
     setBusy(true);
     try {
       const subtotal = cart.subtotalCents;
+      const redeeming = discountCents > 0;
+      const total = discountedTotalCents;
       const { data: order, error } = await supabase
         .from("orders")
         .insert({
@@ -111,7 +126,8 @@ function CheckoutPage() {
           customer_phone: phone.trim(),
           customer_email: auth.user.email,
           subtotal_cents: subtotal,
-          total_cents: subtotal,
+          total_cents: total,
+          discount_cents: discountCents,
           pickup_time: pickup,
           order_notes: notes || null,
           ...(paymentMethod === "pickup" ? { payment_status: "pay_on_pickup" as const } : {}),
@@ -123,27 +139,62 @@ function CheckoutPage() {
         return;
       }
 
-      const { error: iErr } = await supabase.from("order_items").insert(
-        cart.items.map((it) => ({
-          order_id: order.id,
-          menu_item_id: it.id.startsWith("menu:") ? it.id.slice(5) : null,
-          name: it.name,
-          quantity: it.quantity,
-          unit_price_cents: it.unit_price_cents,
-          special_notes: it.special_notes || null,
-        })),
-      );
+      const orderItems = cart.items.flatMap((it) => {
+        const menu_item_id = it.id.startsWith("menu:") ? it.id.slice(5) : null;
+        if (redeeming && cheapestItem && it.id === cheapestItem.id) {
+          const rows = [];
+          if (it.quantity > 1) {
+            rows.push({
+              order_id: order.id,
+              menu_item_id,
+              name: it.name,
+              quantity: it.quantity - 1,
+              unit_price_cents: it.unit_price_cents,
+              special_notes: it.special_notes || null,
+            });
+          }
+          rows.push({
+            order_id: order.id,
+            menu_item_id,
+            name: it.name,
+            quantity: 1,
+            unit_price_cents: 0,
+            special_notes: it.special_notes || null,
+          });
+          return rows;
+        }
+        return [
+          {
+            order_id: order.id,
+            menu_item_id,
+            name: it.name,
+            quantity: it.quantity,
+            unit_price_cents: it.unit_price_cents,
+            special_notes: it.special_notes || null,
+          },
+        ];
+      });
+
+      const { error: iErr } = await supabase.from("order_items").insert(orderItems);
       if (iErr) {
         toast.error(iErr.message);
         return;
       }
 
+      if (redeeming) {
+        const { error: redeemErr } = await supabase
+          .from("profiles")
+          .update({ free_drinks_available: freeDrinksAvailable - 1 })
+          .eq("id", auth.user.id);
+        if (redeemErr) console.error("Failed to redeem free drink:", redeemErr.message);
+      }
+      
       if (paymentMethod === "pickup") {
         cart.clear();
         nav({ to: "/order/$orderId", params: { orderId: order.id } });
         return;
       }
-      
+
       const res = await createSession({
         data: { orderId: order.id, originUrl: window.location.origin },
       });
@@ -241,6 +292,23 @@ function CheckoutPage() {
               placeholder="Anything the barista should know?"
             />
           </section>
+          {freeDrinksAvailable > 0 && (
+            <section className="glass rounded-2xl p-5">
+              <label
+                htmlFor="redeem-free-drink"
+                className="flex items-center justify-between gap-3 cursor-pointer"
+              >
+                <span className="font-semibold text-slate-900">
+                  Redeem a free drink? ({freeDrinksAvailable} available)
+                </span>
+                <Switch
+                  id="redeem-free-drink"
+                  checked={redeemFreeDrink}
+                  onCheckedChange={setRedeemFreeDrink}
+                />
+              </label>
+            </section>
+          )}
           <section className="glass rounded-2xl p-5 space-y-3">
             <h2 className="font-display text-xl">How would you like to pay?</h2>
             <RadioGroup
@@ -251,9 +319,7 @@ function CheckoutPage() {
               <label
                 htmlFor="pay-stripe"
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                  paymentMethod === "stripe"
-                    ? "border-fire bg-fire/5"
-                    : "border-slate-200 bg-white"
+                  paymentMethod === "stripe" ? "border-fire bg-fire/5" : "border-slate-200 bg-white"
                 }`}
               >
                 <RadioGroupItem value="stripe" id="pay-stripe" className="mt-1" />
@@ -267,9 +333,7 @@ function CheckoutPage() {
               <label
                 htmlFor="pay-pickup"
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                  paymentMethod === "pickup"
-                    ? "border-fire bg-fire/5"
-                    : "border-slate-200 bg-white"
+                  paymentMethod === "pickup" ? "border-fire bg-fire/5" : "border-slate-200 bg-white"
                 }`}
               >
                 <RadioGroupItem value="pickup" id="pay-pickup" className="mt-1" />
@@ -290,8 +354,8 @@ function CheckoutPage() {
             {busy
               ? "Preparing…"
               : paymentMethod === "stripe"
-                ? `Pay ${formatCents(cart.subtotalCents)} with Stripe`
-                : `Place order — pay ${formatCents(cart.subtotalCents)} at pickup`}
+                ? `Pay ${formatCents(discountedTotalCents)} with Stripe`
+                : `Place order — pay ${formatCents(discountedTotalCents)} at pickup`}
           </Button>
         </form>
 
@@ -311,10 +375,16 @@ function CheckoutPage() {
                 </span>
               </div>
             ))}
+            {discountCents > 0 && (
+              <div className="flex justify-between text-sm text-[--pink-deep] font-semibold">
+                <span>Discount</span>
+                <span>-{formatCents(discountCents)} (Free drink)</span>
+              </div>
+            )}
           </div>
           <div className="mt-4 pt-3 border-t border-[--pink]/20 flex justify-between font-display text-xl">
             <span>Total</span>
-            <span className="text-fire">{formatCents(cart.subtotalCents)}</span>
+            <span className="text-fire">{formatCents(discountedTotalCents)}</span>
           </div>
         </aside>
       </main>

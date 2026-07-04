@@ -47,6 +47,7 @@ type MenuRow = {
   is_gf_v: boolean;
   is_sold_out: boolean;
   sort_order: number;
+  image_url: string | null;
 };
 
 function MenuPage() {

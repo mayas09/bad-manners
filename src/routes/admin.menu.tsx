@@ -261,6 +261,8 @@ function SectionEditor({
                 onSave={() => saveRow(r)}
                 onDelete={() => deleteRow(r.id)}
                 onToggleSold={(v) => quickToggleSoldOut(r, v)}
+                onUploadImage={(f) => uploadImage(r, f)}
+                onRemoveImage={() => removeImage(r)}
               />
             ))}
           </div>

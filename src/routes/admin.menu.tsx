@@ -278,12 +278,16 @@ function SortableRow({
   onSave,
   onDelete,
   onToggleSold,
+  onUploadImage,
+  onRemoveImage,
 }: {
   row: MenuRow;
   onUpdate: (p: Partial<MenuRow>) => void;
   onSave: () => void;
   onDelete: () => void;
   onToggleSold: (v: boolean) => void;
+  onUploadImage: (f: File) => void;
+  onRemoveImage: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
@@ -293,6 +297,7 @@ function SortableRow({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <div
       ref={setNodeRef}
@@ -308,20 +313,63 @@ function SortableRow({
       >
         <GripVertical className="size-4" />
       </button>
+      <div className="sm:col-span-2 flex flex-col gap-1.5">
+        <div className="aspect-video w-full overflow-hidden rounded-md bg-slate-100 border border-slate-200">
+          {row.image_url ? (
+            <img src={row.image_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full grid place-items-center text-slate-400">
+              <ImageOff className="size-4" />
+            </div>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUploadImage(f);
+            e.currentTarget.value = "";
+          }}
+        />
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 h-7 text-xs px-2"
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload className="size-3 mr-1" /> {row.image_url ? "Replace" : "Upload"}
+          </Button>
+          {row.image_url && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2"
+              onClick={onRemoveImage}
+              aria-label="Remove image"
+            >
+              <Trash2 className="size-3 text-red-500" />
+            </Button>
+          )}
+        </div>
+      </div>
       <Input
-        className="sm:col-span-3"
+        className="sm:col-span-2"
         value={row.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
         placeholder="Name"
       />
       <Input
-        className="sm:col-span-2"
+        className="sm:col-span-1"
         value={row.price ?? ""}
         onChange={(e) => onUpdate({ price: e.target.value })}
         placeholder="Price"
       />
       <Textarea
-        className="sm:col-span-3"
+        className="sm:col-span-2"
         rows={1}
         value={row.note ?? ""}
         onChange={(e) => onUpdate({ note: e.target.value })}
@@ -335,7 +383,7 @@ function SortableRow({
         <Switch checked={row.is_sold_out} onCheckedChange={onToggleSold} />
         Sold out
       </label>
-      <div className="sm:col-span-1 flex gap-1 justify-end">
+      <div className="sm:col-span-2 flex gap-1 justify-end">
         <Button size="icon" variant="outline" onClick={onSave}>
           <Save className="size-4" />
         </Button>

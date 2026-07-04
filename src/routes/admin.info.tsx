@@ -54,6 +54,16 @@ function InfoPage() {
     toast.success("Info saved");
   }
 
+  async function saveLoyaltyMilestone() {
+    const milestone = Math.max(1, Number(info.loyalty_milestone) || 1);
+    const { error } = await supabase
+      .from("business_info")
+      .upsert({ key: "loyalty_milestone", value: String(milestone) }, { onConflict: "key" });
+    if (error) return toast.error(error.message);
+    setInfo((s) => ({ ...s, loyalty_milestone: String(milestone) }));
+    toast.success("Loyalty milestone saved");
+  }
+  
   async function addHourRow() {
     const sort = hours.reduce((m, h) => Math.max(m, h.sort_order), 0) + 1;
     const { error } = await supabase
@@ -167,6 +177,28 @@ function InfoPage() {
         </section>
       </div>
 
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md">
+        <h2 className="text-base font-semibold text-slate-900">Loyalty program</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Customers earn a punch per picked-up order and a free drink at the milestone.
+        </p>
+        <div className="mt-4 grid gap-1.5 max-w-xs">
+          <Label htmlFor="loyalty_milestone" className="text-xs text-slate-600">
+            Free drink after every X purchases
+          </Label>
+          <Input
+            id="loyalty_milestone"
+            type="number"
+            min={1}
+            value={info.loyalty_milestone ?? ""}
+            onChange={(e) => setInfo((s) => ({ ...s, loyalty_milestone: e.target.value }))}
+          />
+        </div>
+        <Button onClick={saveLoyaltyMilestone} className="mt-3">
+          <Save className="size-4 mr-1.5" /> Save
+        </Button>
+      </section>
+      
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

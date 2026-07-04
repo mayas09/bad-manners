@@ -71,7 +71,7 @@ export const finalizeOrder = createServerFn({ method: "POST" })
     const session = await stripe.checkout.sessions.retrieve(data.sessionId);
     if (session.payment_status === "paid") {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin
+      const { error: updateErr } = await supabaseAdmin
         .from("orders")
         .update({
           payment_status: "paid",
@@ -82,6 +82,7 @@ export const finalizeOrder = createServerFn({ method: "POST" })
               : (session.payment_intent?.id ?? null),
         })
         .eq("id", data.orderId);
+      if (updateErr) throw new Error(`Failed to record payment: ${updateErr.message}`);
       return { paid: true };
     }
     return { paid: false };

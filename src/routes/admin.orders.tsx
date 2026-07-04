@@ -13,6 +13,7 @@ export const Route = createFileRoute("/admin/orders")({
 type Order = {
   id: string;
   order_number: number;
+  customer_id: string;
   customer_name: string;
   customer_phone: string;
   status: "pending" | "confirmed" | "ready" | "picked_up" | "cancelled";
@@ -31,6 +32,13 @@ const STATUS_FLOW: Record<Order["status"], Order["status"] | null> = {
   ready: "picked_up",
   picked_up: null,
   cancelled: null,
+};
+
+// Notification copy for the customer, keyed by the status the order is moving FROM.
+const STATUS_NOTIFICATION: Partial<Record<Order["status"], string>> = {
+  pending: "Your order is confirmed! ☕",
+  confirmed: "Your order is ready for pickup! 🖤",
+  ready: "Thank you for your bad manners! 🖤",
 };
 
 const STATUS_CLASS: Record<Order["status"], string> = {
@@ -150,6 +158,14 @@ function OrdersPage() {
     setAdvancingId(null);
     if (error) return toast.error(error.message);
     toast.success(`Order #${o.order_number} → ${next.replace("_", " ")}`);
+    
+    const message = STATUS_NOTIFICATION[o.status];
+    if (message) {
+      const { error: notifyError } = await supabase
+        .from("notifications")
+        .insert({ customer_id: o.customer_id, order_id: o.id, message });
+      if (notifyError) console.error("Failed to send order notification:", notifyError.message);
+    }
   }
 
   return (

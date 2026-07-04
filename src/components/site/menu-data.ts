@@ -4,6 +4,7 @@ export type MenuItem = {
   price?: string;
   note?: string;
   is_sold_out?: boolean;
+  image_url?: string | null;
 };
 export type MenuSection = {
   id: string;

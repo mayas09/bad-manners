@@ -26,6 +26,7 @@ import { useSiteContent } from "@/components/site/use-site-content";
 import { useCart } from "@/lib/cart-context";
 import { CartButton, CartDrawer } from "@/components/site/CartDrawer";
 import { AccountNav } from "@/components/site/AccountNav";
+import { NotificationBell } from "@/components/site/NotificationBell";
 import { parsePriceToCents, formatCents } from "@/lib/price-utils";
 import { toast } from "sonner";
 
@@ -140,6 +141,7 @@ function Nav() {
               </a>
             ))}
             <AccountNav />
+            <NotificationBell />
             <Button asChild className="bg-fire text-white hover:opacity-95">
               <a href="#visit">
                 <MapPin className="mr-1.5 size-4" />
@@ -149,6 +151,7 @@ function Nav() {
           </nav>
           <div className="md:hidden flex items-center gap-1">
             <AccountNav />
+            <NotificationBell />
             <button className="p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
               {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
             </button>

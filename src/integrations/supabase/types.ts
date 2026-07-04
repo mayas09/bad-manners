@@ -234,6 +234,7 @@ export type Database = {
           customer_id: string
           customer_name: string
           customer_phone: string
+          discount_cents: number
           id: string
           order_notes: string | null
           order_number: number
@@ -252,6 +253,7 @@ export type Database = {
           customer_id: string
           customer_name: string
           customer_phone: string
+          discount_cents?: number
           id?: string
           order_notes?: string | null
           order_number?: number
@@ -270,6 +272,7 @@ export type Database = {
           customer_id?: string
           customer_name?: string
           customer_phone?: string
+          discount_cents?: number
           id?: string
           order_notes?: string | null
           order_number?: number
@@ -290,8 +293,10 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string | null
+          free_drinks_available: number
           id: string
           last_name: string | null
+          loyalty_count: number
           phone: string | null
           updated_at: string
         }
@@ -300,8 +305,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          free_drinks_available?: number
           id: string
           last_name?: string | null
+          loyalty_count?: number
           phone?: string | null
           updated_at?: string
         }
@@ -310,8 +317,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          free_drinks_available?: number
           id?: string
           last_name?: string | null
+          loyalty_count?: number
           phone?: string | null
           updated_at?: string
         }

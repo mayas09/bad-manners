@@ -355,10 +355,34 @@ function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; ce
         });
         toast.success(`${item.name} added — ${formatCents(cents)}`, { duration: 1600 });
       }}
-      className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-[--pink]/40 bg-white/60 hover:bg-fire hover:text-white hover:border-transparent px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+      className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-full border border-[--pink]/40 bg-white/80 text-[color:var(--pink-deep)] hover:bg-[color:var(--pink-deep)] hover:text-white hover:border-[color:var(--pink-deep)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
     >
       <Plus className="size-3.5" /> Add to cart
     </button>
+  );
+}
+
+function MenuItemImage({ src, alt }: { src?: string | null; alt: string }) {
+  return (
+    <div className="relative -mx-5 -mt-5 mb-1 aspect-[16/9] overflow-hidden rounded-t-2xl bg-[color:var(--pink-deep)]">
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center">
+          <img
+            src={logo}
+            alt=""
+            aria-hidden="true"
+            className="h-16 w-16 rounded-full object-cover opacity-90 ring-2 ring-white/30"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

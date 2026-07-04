@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, GripVertical } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical, Upload, ImageOff } from "lucide-react";
+import imageCompression from "browser-image-compression";
 import {
   DndContext,
   closestCenter,
@@ -46,6 +47,7 @@ type MenuRow = {
   is_gf_v: boolean;
   is_sold_out: boolean;
   sort_order: number;
+  image_url: string | null;
 };
 
 function MenuPage() {
@@ -141,6 +143,7 @@ function SectionEditor({
         is_gf_v: r.is_gf_v,
         is_sold_out: r.is_sold_out,
         sort_order: r.sort_order,
+        image_url: r.image_url,
       })
       .eq("id", r.id);
     if (error) return toast.error(error.message);
@@ -160,6 +163,55 @@ function SectionEditor({
     const { error } = await supabase.from("menu_items").update({ is_sold_out: v }).eq("id", r.id);
     if (error) toast.error(error.message);
   }
+
+  async function uploadImage(r: MenuRow, file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are supported.");
+      return;
+    }
+    let compressed: File;
+    try {
+      compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: file.type === "image/png" ? "image/png" : "image/jpeg",
+      });
+    } catch {
+      compressed = file;
+    }
+    const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `menu/${r.id}/${Date.now()}-${safeName}`;
+    const up = await supabase.storage
+      .from("site-images")
+      .upload(path, compressed, { upsert: true, contentType: compressed.type });
+    if (up.error) return toast.error(up.error.message);
+    const signed = await supabase.storage
+      .from("site-images")
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    if (signed.error || !signed.data)
+      return toast.error(signed.error?.message ?? "Failed to sign URL");
+    const url = signed.data.signedUrl;
+    updateLocal(r.id, { image_url: url });
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: url })
+      .eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Image uploaded");
+  }
+
+  async function removeImage(r: MenuRow) {
+    if (!r.image_url) return;
+    if (!confirm("Remove this image?")) return;
+    updateLocal(r.id, { image_url: null });
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: null })
+      .eq("id", r.id);
+    if (error) toast.error(error.message);
+  }
+
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -209,6 +261,8 @@ function SectionEditor({
                 onSave={() => saveRow(r)}
                 onDelete={() => deleteRow(r.id)}
                 onToggleSold={(v) => quickToggleSoldOut(r, v)}
+                onUploadImage={(f) => uploadImage(r, f)}
+                onRemoveImage={() => removeImage(r)}
               />
             ))}
           </div>
@@ -224,12 +278,16 @@ function SortableRow({
   onSave,
   onDelete,
   onToggleSold,
+  onUploadImage,
+  onRemoveImage,
 }: {
   row: MenuRow;
   onUpdate: (p: Partial<MenuRow>) => void;
   onSave: () => void;
   onDelete: () => void;
   onToggleSold: (v: boolean) => void;
+  onUploadImage: (f: File) => void;
+  onRemoveImage: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
@@ -239,6 +297,7 @@ function SortableRow({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <div
       ref={setNodeRef}
@@ -254,20 +313,63 @@ function SortableRow({
       >
         <GripVertical className="size-4" />
       </button>
+      <div className="sm:col-span-2 flex flex-col gap-1.5">
+        <div className="aspect-video w-full overflow-hidden rounded-md bg-slate-100 border border-slate-200">
+          {row.image_url ? (
+            <img src={row.image_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full grid place-items-center text-slate-400">
+              <ImageOff className="size-4" />
+            </div>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUploadImage(f);
+            e.currentTarget.value = "";
+          }}
+        />
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 h-7 text-xs px-2"
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload className="size-3 mr-1" /> {row.image_url ? "Replace" : "Upload"}
+          </Button>
+          {row.image_url && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2"
+              onClick={onRemoveImage}
+              aria-label="Remove image"
+            >
+              <Trash2 className="size-3 text-red-500" />
+            </Button>
+          )}
+        </div>
+      </div>
       <Input
-        className="sm:col-span-3"
+        className="sm:col-span-2"
         value={row.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
         placeholder="Name"
       />
       <Input
-        className="sm:col-span-2"
+        className="sm:col-span-1"
         value={row.price ?? ""}
         onChange={(e) => onUpdate({ price: e.target.value })}
         placeholder="Price"
       />
       <Textarea
-        className="sm:col-span-3"
+        className="sm:col-span-2"
         rows={1}
         value={row.note ?? ""}
         onChange={(e) => onUpdate({ note: e.target.value })}
@@ -281,7 +383,7 @@ function SortableRow({
         <Switch checked={row.is_sold_out} onCheckedChange={onToggleSold} />
         Sold out
       </label>
-      <div className="sm:col-span-1 flex gap-1 justify-end">
+      <div className="sm:col-span-2 flex gap-1 justify-end">
         <Button size="icon" variant="outline" onClick={onSave}>
           <Save className="size-4" />
         </Button>

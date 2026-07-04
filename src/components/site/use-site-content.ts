@@ -90,6 +90,7 @@ export function useSiteContent(): SiteContent {
             price: r.price ?? undefined,
             note: r.note ?? undefined,
             is_sold_out: !!r.is_sold_out,
+            image_url: r.image_url ?? null,
           });
         });
         menu = Object.values(byId).filter((s) => s.items.length > 0);

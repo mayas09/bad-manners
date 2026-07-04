@@ -143,6 +143,7 @@ function SectionEditor({
         is_gf_v: r.is_gf_v,
         is_sold_out: r.is_sold_out,
         sort_order: r.sort_order,
+        image_url: r.image_url,
       })
       .eq("id", r.id);
     if (error) return toast.error(error.message);
@@ -162,6 +163,55 @@ function SectionEditor({
     const { error } = await supabase.from("menu_items").update({ is_sold_out: v }).eq("id", r.id);
     if (error) toast.error(error.message);
   }
+
+  async function uploadImage(r: MenuRow, file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are supported.");
+      return;
+    }
+    let compressed: File;
+    try {
+      compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: file.type === "image/png" ? "image/png" : "image/jpeg",
+      });
+    } catch {
+      compressed = file;
+    }
+    const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `menu/${r.id}/${Date.now()}-${safeName}`;
+    const up = await supabase.storage
+      .from("site-images")
+      .upload(path, compressed, { upsert: true, contentType: compressed.type });
+    if (up.error) return toast.error(up.error.message);
+    const signed = await supabase.storage
+      .from("site-images")
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    if (signed.error || !signed.data)
+      return toast.error(signed.error?.message ?? "Failed to sign URL");
+    const url = signed.data.signedUrl;
+    updateLocal(r.id, { image_url: url });
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: url })
+      .eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Image uploaded");
+  }
+
+  async function removeImage(r: MenuRow) {
+    if (!r.image_url) return;
+    if (!confirm("Remove this image?")) return;
+    updateLocal(r.id, { image_url: null });
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: null })
+      .eq("id", r.id);
+    if (error) toast.error(error.message);
+  }
+
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;

@@ -438,8 +438,9 @@ function MenuSection({
                   return (
                     <div
                       key={item.id ?? i}
-                      className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 ${item.is_sold_out ? "opacity-70" : ""}`}
+                      className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 overflow-hidden ${item.is_sold_out ? "opacity-70" : ""}`}
                     >
+                      <MenuItemImage src={item.image_url} alt={item.name} />
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">

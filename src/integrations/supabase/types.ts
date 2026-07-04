@@ -347,7 +347,7 @@ export type Database = {
         | "ready"
         | "picked_up"
         | "cancelled"
-      payment_status: "unpaid" | "paid" | "refunded" | "failed"
+      payment_status: "unpaid" | "paid" | "refunded" | "failed" | "pay_on_pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -477,7 +477,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       order_status: ["pending", "confirmed", "ready", "picked_up", "cancelled"],
-      payment_status: ["unpaid", "paid", "refunded", "failed"],
+      payment_status: ["unpaid", "paid", "refunded", "failed", "pay_on_pickup"],
     },
   },
 } as const

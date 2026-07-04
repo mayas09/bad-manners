@@ -39,6 +39,7 @@ function AccountHome() {
   const [last, setLast] = useState("");
   const [phone, setPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [loyaltyMilestone, setLoyaltyMilestone] = useState(5);
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });
@@ -52,6 +53,18 @@ function AccountHome() {
     }
   }, [auth.profile]);
 
+  useEffect(() => {
+    supabase
+      .from("business_info")
+      .select("value")
+      .eq("key", "loyalty_milestone")
+      .maybeSingle()
+      .then(({ data }) => {
+        const n = Number(data?.value);
+        if (Number.isFinite(n) && n > 0) setLoyaltyMilestone(n);
+      });
+  }, []);
+  
   useEffect(() => {
     if (!auth.user) return;
     supabase
@@ -161,6 +174,31 @@ function AccountHome() {
           </div>
         </section>
 
+        <section className="glass rounded-2xl p-6">
+          <h2 className="font-display text-2xl">Loyalty punch card</h2>
+          {(auth.profile?.free_drinks_available ?? 0) > 0 && (
+            <div className="mt-3 rounded-xl bg-[--pink-deep] px-4 py-3 font-semibold text-white">
+              You have {auth.profile!.free_drinks_available} free drink
+              {auth.profile!.free_drinks_available > 1 ? "s" : ""} available! 🎉
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            {Array.from({ length: loyaltyMilestone }).map((_, i) => (
+              <span
+                key={i}
+                className={`size-8 rounded-full border-2 ${
+                  i < (auth.profile?.loyalty_count ?? 0)
+                    ? "border-[--pink-deep] bg-[--pink-deep]"
+                    : "border-[--pink]/40 bg-transparent"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {auth.profile?.loyalty_count ?? 0} / {loyaltyMilestone} punches toward your free drink
+          </p>
+        </section>
+        
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Profile</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">

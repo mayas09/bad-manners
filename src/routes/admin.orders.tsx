@@ -41,6 +41,21 @@ const STATUS_CLASS: Record<Order["status"], string> = {
   cancelled: "bg-red-100 text-red-700 border-red-300",
 };
 
+const PAYMENT_BADGE: Record<string, { label: string; className: string }> = {
+  paid: { label: "Paid", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  pay_on_pickup: { label: "Pay on Pickup", className: "bg-amber-100 text-amber-800 border-amber-300" },
+  unpaid: { label: "Unpaid", className: "bg-red-100 text-red-700 border-red-300" },
+};
+
+function paymentBadge(status: string) {
+  return (
+    PAYMENT_BADGE[status] ?? {
+      label: status,
+      className: "bg-red-100 text-red-700 border-red-300",
+    }
+  );
+}
+
 function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, Item[]>>({});
@@ -180,11 +195,16 @@ function OrdersPage() {
                       >
                         {o.status.replace("_", " ")}
                       </span>
-                      {o.payment_status !== "paid" && (
-                        <span className="inline-flex items-center rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-700">
-                          {o.payment_status}
-                        </span>
-                      )}
+                      {(() => {
+                        const badge = paymentBadge(o.payment_status);
+                        return (
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="mt-1 text-sm text-slate-700">
                       {o.customer_name} ·{" "}

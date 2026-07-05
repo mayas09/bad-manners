@@ -65,10 +65,19 @@ export const finalizeOrder = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order || order.customer_id !== userId) throw new Error("Order not found");
     if (order.payment_status === "paid") return { paid: true };
+    // The session must be the one created for THIS order — otherwise a customer
+    // could reuse any of their own paid sessions (e.g. from a cheaper order) to
+    // mark an unrelated, more expensive order as paid without paying for it.
+    if (!order.stripe_session_id || order.stripe_session_id !== data.sessionId) {
+      throw new Error("Session does not match this order");
+    }
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" as any });
     const session = await stripe.checkout.sessions.retrieve(data.sessionId);
+    if (session.metadata?.order_id !== data.orderId) {
+      throw new Error("Session does not match this order");
+    }
     if (session.payment_status === "paid") {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: updateErr } = await supabaseAdmin

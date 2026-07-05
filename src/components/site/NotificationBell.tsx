@@ -1,6 +1,7 @@
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
 
@@ -9,10 +10,12 @@ type Notification = {
   message: string;
   is_read: boolean;
   created_at: string;
+  order_id: string | null;
 };
 
 export function NotificationBell() {
   const auth = useCustomerAuth();
+  const nav = useNavigate();
   const userId = auth.user?.id;
   const [items, setItems] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -41,7 +44,7 @@ export function NotificationBell() {
       try {
         const { data, error } = await supabase
           .from("notifications")
-          .select("id,message,is_read,created_at")
+          .select("id,message,is_read,created_at,order_id")
           .eq("customer_id", uid)
           .order("created_at", { ascending: false })
           .limit(20);
@@ -104,6 +107,15 @@ export function NotificationBell() {
     }
   }
 
+  function handleSelect(n: Notification) {
+    setOpen(false);
+    if (n.order_id) {
+      nav({ to: "/account/receipt/$orderId", params: { orderId: n.order_id } });
+    } else {
+      nav({ to: "/account/events" });
+    }
+  }
+  
   if (auth.loading || !auth.user) return null;
 
   return (
@@ -132,7 +144,12 @@ export function NotificationBell() {
               </p>
             ) : (
               items.map((n) => (
-                <div key={n.id} className="px-3 py-2 border-b border-slate-50 last:border-0">
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => handleSelect(n)}
+                  className="w-full text-left px-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                >
                   <p className="text-sm text-slate-800">{n.message}</p>
                   <p className="mt-0.5 text-xs text-slate-400">
                     {new Date(n.created_at).toLocaleString([], {
@@ -142,7 +159,7 @@ export function NotificationBell() {
                       minute: "2-digit",
                     })}
                   </p>
-                </div>
+                </button>
               ))
             )}
           </div>

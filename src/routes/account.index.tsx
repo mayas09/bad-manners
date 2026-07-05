@@ -67,13 +67,38 @@ function AccountHome() {
   
   useEffect(() => {
     if (!auth.user) return;
-    supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setOrders((data as Order[]) ?? []);
-      });
+    const uid = auth.user.id;
+
+    function loadOrders() {
+      supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          setOrders((data as Order[]) ?? []);
+        });
+    }
+    loadOrders();
+
+    // Keep the loyalty punch card and order list current when an admin
+    // changes an order's status (e.g. marking it picked_up), since that's
+    // when the loyalty_count trigger fires server-side.
+    const channel = supabase
+      .channel(`account-orders-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `customer_id=eq.${uid}` },
+        () => {
+          loadOrders();
+          auth.refresh();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);
 
   async function saveProfile() {

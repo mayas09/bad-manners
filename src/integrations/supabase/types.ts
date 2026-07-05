@@ -192,6 +192,7 @@ export type Database = {
           id: string
           is_read: boolean
           message: string
+          order_id: string | null
         }
         Insert: {
           created_at?: string
@@ -199,6 +200,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           message: string
+          order_id?: string | null
         }
         Update: {
           created_at?: string
@@ -206,8 +208,17 @@ export type Database = {
           id?: string
           is_read?: boolean
           message?: string
+          order_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -428,7 +439,12 @@ export type Database = {
         | "ready"
         | "picked_up"
         | "cancelled"
-      payment_status: "unpaid" | "paid" | "refunded" | "failed"
+      payment_status:
+        | "unpaid"
+        | "paid"
+        | "refunded"
+        | "failed"
+        | "pay_on_pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -558,7 +574,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       order_status: ["pending", "confirmed", "ready", "picked_up", "cancelled"],
-      payment_status: ["unpaid", "paid", "refunded", "failed"],
+      payment_status: ["unpaid", "paid", "refunded", "failed", "pay_on_pickup"],
     },
   },
 } as const

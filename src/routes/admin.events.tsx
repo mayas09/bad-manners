@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { formatInSiteTime, formatPlainDateInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
@@ -121,7 +122,7 @@ function AdminEventsPage() {
               <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-700">
                 <p>
                   <span className="text-slate-400">Date:</span>{" "}
-                  {r.event_date ? new Date(r.event_date).toLocaleDateString() : "—"}
+                  {r.event_date ? formatPlainDateInSiteTime(r.event_date) : "—"}
                   {r.event_time ? ` @ ${r.event_time.slice(0, 5)}` : ""}
                 </p>
                 <p>
@@ -190,7 +191,11 @@ function AdminEventsPage() {
                   </Button>
                 )}
                 <span className="ml-auto text-xs text-slate-400 self-center">
-                  Submitted {new Date(r.created_at).toLocaleString()}
+                  Submitted{" "}
+                  {formatInSiteTime(r.created_at, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </span>
               </div>
             </div>

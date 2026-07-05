@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 type Notification = {
   id: string;
@@ -152,7 +153,7 @@ export function NotificationBell() {
                 >
                   <p className="text-sm text-slate-800">{n.message}</p>
                   <p className="mt-0.5 text-xs text-slate-400">
-                    {new Date(n.created_at).toLocaleString([], {
+                    {formatInSiteTime(n.created_at, {
                       month: "short",
                       day: "numeric",
                       hour: "numeric",

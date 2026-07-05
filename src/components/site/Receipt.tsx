@@ -140,7 +140,7 @@ export const Receipt = forwardRef<HTMLDivElement, { order: ReceiptOrder }>(
           </div>
           {discount > 0 && (
             <div className="flex justify-between">
-              <span className="text-[#f9a8d4]">Loyalty discount</span>
+              <span className="text-[#f9a8d4]">Free drink redemption</span>
               <span className="text-emerald-300">-{formatCents(discount)}</span>
             </div>
           )}
@@ -159,6 +159,8 @@ export const Receipt = forwardRef<HTMLDivElement, { order: ReceiptOrder }>(
         <div className="text-center text-[11px] leading-relaxed text-[#f9a8d4]">
           <p>697 Haywood Rd, Suite G, Asheville NC 28806</p>
           <p className="mt-1">Thank you for your bad manners 🖤</p>
+          <p className="mt-2">Instagram: @badmannerscoffee</p>
+          <p>Facebook: @badmannerscoffee</p>
         </div>
       </div>
     );

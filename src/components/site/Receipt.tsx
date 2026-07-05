@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import logo from "@/assets/logo.jpg";
 import { formatCents } from "@/lib/price-utils";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 export type ReceiptOrder = {
   id: string;
@@ -72,7 +73,7 @@ export const Receipt = forwardRef<HTMLDivElement, { order: ReceiptOrder }>(
           <div className="text-right">
             <p className="text-[10px] uppercase tracking-widest text-[#f9a8d4]">Date</p>
             <p className="text-white">
-              {new Date(order.created_at).toLocaleString([], {
+              {formatInSiteTime(order.created_at, {
                 dateStyle: "medium",
                 timeStyle: "short",
               })}
@@ -85,7 +86,7 @@ export const Receipt = forwardRef<HTMLDivElement, { order: ReceiptOrder }>(
           <div className="text-right">
             <p className="text-[10px] uppercase tracking-widest text-[#f9a8d4]">Pickup</p>
             <p className="text-white">
-              {new Date(order.pickup_time).toLocaleTimeString([], {
+              {formatInSiteTime(order.pickup_time, {
                 hour: "numeric",
                 minute: "2-digit",
               })}

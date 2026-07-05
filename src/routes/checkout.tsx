@@ -15,6 +15,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/price-utils";
 import { useSiteContent } from "@/components/site/use-site-content";
+import {
+  formatInSiteTime,
+  getSiteDateParts,
+  getSiteDayOfWeek,
+  siteDateTimeToUtcIso,
+} from "@/lib/time-utils";
 
 export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
@@ -38,10 +44,10 @@ function generatePickupSlots(hoursStr: string): { value: string; label: string }
   const closeT = parse(parts[1]);
   if (!openT || !closeT) return [];
   const now = new Date();
-  const open = new Date(now);
-  open.setHours(openT.h, openT.min, 0, 0);
-  const close = new Date(now);
-  close.setHours(closeT.h, closeT.min, 0, 0);
+  const today = getSiteDateParts(now);
+  const todayDate = { year: today.year, month: today.month, day: today.day };
+  const open = new Date(siteDateTimeToUtcIso(todayDate, { hour: openT.h, minute: openT.min }));
+  const close = new Date(siteDateTimeToUtcIso(todayDate, { hour: closeT.h, minute: closeT.min }));
   const start = new Date(Math.max(now.getTime() + 15 * 60 * 1000, open.getTime()));
   // Round up to next 15 min
   const rem = start.getMinutes() % 15;
@@ -50,7 +56,7 @@ function generatePickupSlots(hoursStr: string): { value: string; label: string }
   for (let t = new Date(start); t <= close; t = new Date(t.getTime() + 15 * 60 * 1000)) {
     slots.push({
       value: t.toISOString(),
-      label: t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      label: formatInSiteTime(t, { hour: "numeric", minute: "2-digit" }),
     });
   }
   return slots;
@@ -95,7 +101,7 @@ function CheckoutPage() {
 
   const slots = useMemo(() => {
     if (!content.loaded && content.hours.length === 0) return [];
-    const dayIdx = new Date().getDay(); // 0=Sun
+    const dayIdx = getSiteDayOfWeek(); // 0=Sun in the site timezone
     // Match by label heuristic
     const label =
       dayIdx === 0 || dayIdx === 6

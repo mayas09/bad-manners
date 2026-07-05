@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { User, LogOut, ShoppingBag as OrdersIcon } from "lucide-react";
+import { User, LogOut, ShoppingBag as OrdersIcon, CalendarHeart } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";

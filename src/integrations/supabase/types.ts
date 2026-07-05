@@ -92,6 +92,54 @@ export type Database = {
         }
         Relationships: []
       }
+      catering_requests: {
+        Row: {
+          admin_notes: string | null
+          budget_range: string | null
+          created_at: string
+          customer_id: string
+          event_date: string | null
+          event_time: string | null
+          event_type: string
+          guest_count: number | null
+          id: string
+          location: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          customer_id: string
+          event_date?: string | null
+          event_time?: string | null
+          event_type: string
+          guest_count?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          customer_id?: string
+          event_date?: string | null
+          event_time?: string | null
+          event_type?: string
+          guest_count?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           created_at: string
@@ -134,6 +182,30 @@ export type Database = {
           section?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          is_read: boolean
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_read?: boolean
+          message: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string
         }
         Relationships: []
       }

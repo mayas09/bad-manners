@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Coffee, Clock, Inbox } from "lucide-react";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/admin/")({
   component: Overview,
@@ -42,7 +43,10 @@ function Overview() {
     {
       label: "Menu last updated",
       value: stats?.lastUpdated
-        ? new Date(stats.lastUpdated).toLocaleString()
+        ? formatInSiteTime(stats.lastUpdated, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })
         : stats
           ? "Never"
           : "…",

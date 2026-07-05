@@ -200,7 +200,7 @@ function AccountHome() {
                   <Link
                     to="/account/receipt/$orderId"
                     params={{ orderId: o.id }}
-                    className="text-xs font-semibold uppercase tracking-widest text-[--pink-deep] hover:underline"
+                    className="inline-flex items-center rounded-full border border-[--pink-deep] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[--pink-deep] transition-colors hover:bg-[--pink-deep] hover:text-white"
                   >
                     Receipt
                   </Link>

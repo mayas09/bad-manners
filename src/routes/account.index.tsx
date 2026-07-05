@@ -35,6 +35,7 @@ function AccountHome() {
   const auth = useCustomerAuth();
   const nav = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [showAllOrders, setShowAllOrders] = useState(false);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [phone, setPhone] = useState("");
@@ -172,7 +173,7 @@ function AccountHome() {
                 .
               </p>
             )}
-            {orders.map((o) => (
+            {(showAllOrders ? orders : orders.slice(0, 3)).map((o) => (
               <div
                 key={o.id}
                 className="glass rounded-xl p-4 flex flex-wrap items-center gap-4 justify-between"
@@ -212,6 +213,13 @@ function AccountHome() {
               </div>
             ))}
           </div>
+          {orders.length > 3 && (
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" size="sm" onClick={() => setShowAllOrders((s) => !s)}>
+                {showAllOrders ? "Show less" : "Show all orders"}
+              </Button>
+            </div>
+          )}
         </section>
 
         <section className="glass rounded-2xl p-6">

@@ -23,6 +23,7 @@ import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
 import { Route as AccountResetPasswordRouteImport } from './routes/account.reset-password'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
+import { Route as AccountReceiptOrderIdRouteImport } from './routes/account.receipt.$orderId'
 
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
@@ -94,6 +95,11 @@ const AccountLoginRoute = AccountLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountReceiptOrderIdRoute = AccountReceiptOrderIdRouteImport.update({
+  id: '/receipt/$orderId',
+  path: '/receipt/$orderId',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
+    | '/account/receipt/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account'
     | '/admin'
+    | '/account/receipt/$orderId'
   id:
     | '__root__'
     | '/'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
+    | '/account/receipt/$orderId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -299,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountLoginRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/receipt/$orderId': {
+      id: '/account/receipt/$orderId'
+      path: '/receipt/$orderId'
+      fullPath: '/account/receipt/$orderId'
+      preLoaderRoute: typeof AccountReceiptOrderIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
 
@@ -307,6 +326,7 @@ interface AccountRouteChildren {
   AccountResetPasswordRoute: typeof AccountResetPasswordRoute
   AccountSignupRoute: typeof AccountSignupRoute
   AccountIndexRoute: typeof AccountIndexRoute
+  AccountReceiptOrderIdRoute: typeof AccountReceiptOrderIdRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
@@ -314,6 +334,7 @@ const AccountRouteChildren: AccountRouteChildren = {
   AccountResetPasswordRoute: AccountResetPasswordRoute,
   AccountSignupRoute: AccountSignupRoute,
   AccountIndexRoute: AccountIndexRoute,
+  AccountReceiptOrderIdRoute: AccountReceiptOrderIdRoute,
 }
 
 const AccountRouteWithChildren =

@@ -163,6 +163,13 @@ function AccountHome() {
                   <span className="font-display text-lg text-fire">
                     {formatCents(o.total_cents)}
                   </span>
+                  <Link
+                    to="/account/receipt/$orderId"
+                    params={{ orderId: o.id }}
+                    className="text-xs font-semibold uppercase tracking-widest text-[--pink-deep] hover:underline"
+                  >
+                    Receipt
+                  </Link>
                   {o.status === "pending" && (
                     <Button size="sm" variant="outline" onClick={() => cancelOrder(o.id)}>
                       Cancel

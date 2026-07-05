@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -243,16 +243,24 @@ function OrdersPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-slate-900">{formatCents(o.total_cents)}</p>
-                    {next && (
-                      <Button
-                        size="sm"
-                        className="mt-2"
-                        disabled={advancingId === o.id}
-                        onClick={() => advance(o)}
+                    <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                      <Link
+                        to="/account/receipt/$orderId"
+                        params={{ orderId: o.id }}
+                        className="inline-flex items-center rounded-full border border-[--pink-deep] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[--pink-deep] transition-colors hover:bg-[--pink-deep] hover:text-white"
                       >
-                        {advancingId === o.id ? "…" : `Mark ${next.replace("_", " ")}`}
-                      </Button>
-                    )}
+                        Receipt
+                      </Link>
+                      {next && (
+                        <Button
+                          size="sm"
+                          disabled={advancingId === o.id}
+                          onClick={() => advance(o)}
+                        >
+                          {advancingId === o.id ? "…" : `Mark ${next.replace("_", " ")}`}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <ul className="mt-3 border-t border-slate-100 pt-3 space-y-1 text-sm text-slate-700">

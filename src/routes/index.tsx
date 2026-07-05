@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -30,6 +30,26 @@ import { NotificationBell } from "@/components/site/NotificationBell";
 import { parsePriceToCents, formatCents } from "@/lib/price-utils";
 import { toast } from "sonner";
 
+/**
+ * Post-auth nav widgets (account menu, notifications) read the customer
+ * profile and open a Realtime subscription. If either throws, this keeps
+ * the crash contained so the public homepage still renders normally
+ * instead of the whole route falling back to a blank crash screen.
+ */
+class AccountWidgetsBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("Account widgets failed to render", error);
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -50,6 +70,10 @@ export const Route = createFileRoute("/")({
     ],
   }),
   component: Home,
+  // Post-auth widgets are already contained by AccountWidgetsBoundary above,
+  // but if something unexpected still throws, fall back to the public
+  // homepage instead of the generic root "This page didn't load" screen.
+  errorComponent: () => <Home />,
 });
 
 function Home() {
@@ -140,8 +164,10 @@ function Nav() {
                 {l.label}
               </a>
             ))}
-            <AccountNav />
-            <NotificationBell />
+            <AccountWidgetsBoundary>
+              <AccountNav />
+              <NotificationBell />
+            </AccountWidgetsBoundary>
             <Button asChild className="bg-fire text-white hover:opacity-95">
               <a href="#visit">
                 <MapPin className="mr-1.5 size-4" />
@@ -150,8 +176,10 @@ function Nav() {
             </Button>
           </nav>
           <div className="md:hidden flex items-center gap-1">
-            <AccountNav />
-            <NotificationBell />
+            <AccountWidgetsBoundary>
+              <AccountNav />
+              <NotificationBell />
+            </AccountWidgetsBoundary>
             <button className="p-2" onClick={() => setOpen((s) => !s)} aria-label="Toggle menu">
               {open ? <X className="size-6" /> : <MenuIcon className="size-6" />}
             </button>

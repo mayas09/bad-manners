@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/price-utils";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/account/")({
   component: AccountHome,
@@ -181,8 +182,11 @@ function AccountHome() {
                 <div className="min-w-0">
                   <p className="font-display text-lg">Order #{o.order_number}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString()} · Pickup{" "}
-                    {new Date(o.pickup_time).toLocaleTimeString([], {
+                    {formatInSiteTime(o.created_at, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })} · Pickup{" "}
+                    {formatInSiteTime(o.pickup_time, {
                       hour: "numeric",
                       minute: "2-digit",
                     })}

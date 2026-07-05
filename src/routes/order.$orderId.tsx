@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeOrder } from "@/lib/checkout.functions";
 import { formatCents } from "@/lib/price-utils";
+import { formatInSiteTime } from "@/lib/time-utils";
 import { CheckCircle2, Clock } from "lucide-react";
 import { z } from "zod";
 
@@ -104,7 +105,7 @@ function OrderPage() {
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Pickup at{" "}
-            {new Date(order.pickup_time).toLocaleTimeString([], {
+            {formatInSiteTime(order.pickup_time, {
               hour: "numeric",
               minute: "2-digit",
             })}{" "}

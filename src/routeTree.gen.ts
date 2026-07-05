@@ -23,6 +23,7 @@ import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
 import { Route as AccountResetPasswordRouteImport } from './routes/account.reset-password'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
+import { Route as AccountEventsRouteImport } from './routes/account.events'
 import { Route as AccountReceiptOrderIdRouteImport } from './routes/account.receipt.$orderId'
 
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -95,6 +96,11 @@ const AccountLoginRoute = AccountLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountEventsRoute = AccountEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AccountRoute,
+} as any)
 const AccountReceiptOrderIdRoute = AccountReceiptOrderIdRouteImport.update({
   id: '/receipt/$orderId',
   path: '/receipt/$orderId',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountLoginRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/events': {
+      id: '/account/events'
+      path: '/events'
+      fullPath: '/account/events'
+      preLoaderRoute: typeof AccountEventsRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/account/receipt/$orderId': {
       id: '/account/receipt/$orderId'
       path: '/receipt/$orderId'
@@ -322,6 +341,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AccountRouteChildren {
+  AccountEventsRoute: typeof AccountEventsRoute
   AccountLoginRoute: typeof AccountLoginRoute
   AccountResetPasswordRoute: typeof AccountResetPasswordRoute
   AccountSignupRoute: typeof AccountSignupRoute
@@ -330,6 +350,7 @@ interface AccountRouteChildren {
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
+  AccountEventsRoute: AccountEventsRoute,
   AccountLoginRoute: AccountLoginRoute,
   AccountResetPasswordRoute: AccountResetPasswordRoute,
   AccountSignupRoute: AccountSignupRoute,

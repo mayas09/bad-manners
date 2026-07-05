@@ -38,41 +38,51 @@ export function NotificationBell() {
     let cancelled = false;
 
     async function load() {
-      const { data } = await supabase
-        .from("notifications")
-        .select("id,message,is_read,created_at")
-        .eq("customer_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (cancelled) return;
-      const list = (data as Notification[]) ?? [];
-      setItems(list);
-      setUnreadCount(list.filter((n) => !n.is_read).length);
+      try {
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("id,message,is_read,created_at")
+          .eq("customer_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (error) throw error;
+        if (cancelled) return;
+        const list = (data as Notification[]) ?? [];
+        setItems(list);
+        setUnreadCount(list.filter((n) => !n.is_read).length);
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      }
     }
     load();
 
-    const channel = supabase
-      .channel(`notifications-${uid}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `customer_id=eq.${uid}`,
-        },
-        (payload) => {
-          const row = payload.new as Notification;
-          setItems((prev) => [row, ...prev].slice(0, 20));
-          setUnreadCount((c) => c + 1);
-          toast(row.message);
-        },
-      )
-      .subscribe();
-
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel(`notifications-${uid}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `customer_id=eq.${uid}`,
+          },
+          (payload) => {
+            const row = payload.new as Notification;
+            setItems((prev) => [row, ...prev].slice(0, 20));
+            setUnreadCount((c) => c + 1);
+            toast(row.message);
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      console.error("Failed to subscribe to notifications channel", err);
+    }
+    
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [userId]);
 
@@ -82,11 +92,15 @@ export function NotificationBell() {
     if (next && unreadCount > 0 && userId) {
       setUnreadCount(0);
       setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("customer_id", userId)
-        .eq("is_read", false);
+      try {
+        await supabase
+          .from("notifications")
+          .update({ is_read: true })
+          .eq("customer_id", userId)
+          .eq("is_read", false);
+      } catch (err) {
+        console.error("Failed to mark notifications as read", err);
+      }
     }
   }
 

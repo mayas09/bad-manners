@@ -20,9 +20,12 @@ import { Route as AdminPhotosRouteImport } from './routes/admin.photos'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
 import { Route as AccountResetPasswordRouteImport } from './routes/account.reset-password'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
+import { Route as AccountEventsRouteImport } from './routes/account.events'
+import { Route as AccountReceiptOrderIdRouteImport } from './routes/account.receipt.$orderId'
 
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
@@ -79,6 +82,11 @@ const AdminInfoRoute = AdminInfoRouteImport.update({
   path: '/info',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AccountSignupRoute = AccountSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -94,15 +102,27 @@ const AccountLoginRoute = AccountLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountEventsRoute = AccountEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountReceiptOrderIdRoute = AccountReceiptOrderIdRouteImport.update({
+  id: '/receipt/$orderId',
+  path: '/receipt/$orderId',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -110,13 +130,16 @@ export interface FileRoutesByFullPath {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -124,6 +147,7 @@ export interface FileRoutesByTo {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,9 +155,11 @@ export interface FileRoutesById {
   '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
+  '/account/events': typeof AccountEventsRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -141,6 +167,7 @@ export interface FileRoutesById {
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/account/receipt/$orderId': typeof AccountReceiptOrderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,9 +176,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
     | '/admin/orders'
@@ -159,13 +188,16 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
+    | '/account/receipt/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
     | '/admin/orders'
@@ -173,15 +205,18 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account'
     | '/admin'
+    | '/account/receipt/$orderId'
   id:
     | '__root__'
     | '/'
     | '/account'
     | '/admin'
     | '/checkout'
+    | '/account/events'
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
     | '/admin/orders'
@@ -189,6 +224,7 @@ export interface FileRouteTypes {
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
+    | '/account/receipt/$orderId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInfoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/account/signup': {
       id: '/account/signup'
       path: '/signup'
@@ -299,27 +342,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountLoginRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/events': {
+      id: '/account/events'
+      path: '/events'
+      fullPath: '/account/events'
+      preLoaderRoute: typeof AccountEventsRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/receipt/$orderId': {
+      id: '/account/receipt/$orderId'
+      path: '/receipt/$orderId'
+      fullPath: '/account/receipt/$orderId'
+      preLoaderRoute: typeof AccountReceiptOrderIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
 
 interface AccountRouteChildren {
+  AccountEventsRoute: typeof AccountEventsRoute
   AccountLoginRoute: typeof AccountLoginRoute
   AccountResetPasswordRoute: typeof AccountResetPasswordRoute
   AccountSignupRoute: typeof AccountSignupRoute
   AccountIndexRoute: typeof AccountIndexRoute
+  AccountReceiptOrderIdRoute: typeof AccountReceiptOrderIdRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
+  AccountEventsRoute: AccountEventsRoute,
   AccountLoginRoute: AccountLoginRoute,
   AccountResetPasswordRoute: AccountResetPasswordRoute,
   AccountSignupRoute: AccountSignupRoute,
   AccountIndexRoute: AccountIndexRoute,
+  AccountReceiptOrderIdRoute: AccountReceiptOrderIdRoute,
 }
 
 const AccountRouteWithChildren =
   AccountRoute._addFileChildren(AccountRouteChildren)
 
 interface AdminRouteChildren {
+  AdminEventsRoute: typeof AdminEventsRoute
   AdminInfoRoute: typeof AdminInfoRoute
   AdminMenuRoute: typeof AdminMenuRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -328,6 +390,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminEventsRoute: AdminEventsRoute,
   AdminInfoRoute: AdminInfoRoute,
   AdminMenuRoute: AdminMenuRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -347,13 +410,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

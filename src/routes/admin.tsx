@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   Settings,
   ShoppingBag,
+  CalendarHeart,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const NAV = [
   { to: "/admin/photos", label: "Photos", icon: ImageIcon, exact: false },
   { to: "/admin/info", label: "Business Info", icon: Settings, exact: false },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, exact: false },
+  { to: "/admin/events", label: "Events", icon: CalendarHeart, exact: false },
 ] as const;
 
 function AdminLayout() {

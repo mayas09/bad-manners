@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { User, LogOut, ShoppingBag as OrdersIcon } from "lucide-react";
+import { User, LogOut, ShoppingBag as OrdersIcon, CalendarHeart } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
@@ -56,6 +56,13 @@ export function AccountNav() {
             className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
           >
             <OrdersIcon className="size-4" /> My Orders
+          </Link>
+          <Link
+            to="/account/events"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+          >
+            <CalendarHeart className="size-4" /> Catering & Events
           </Link>
           <button
             onClick={async () => {

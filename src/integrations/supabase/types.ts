@@ -92,6 +92,54 @@ export type Database = {
         }
         Relationships: []
       }
+      catering_requests: {
+        Row: {
+          admin_notes: string | null
+          budget_range: string | null
+          created_at: string
+          customer_id: string
+          event_date: string | null
+          event_time: string | null
+          event_type: string
+          guest_count: number | null
+          id: string
+          location: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          customer_id: string
+          event_date?: string | null
+          event_time?: string | null
+          event_type: string
+          guest_count?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          customer_id?: string
+          event_date?: string | null
+          event_time?: string | null
+          event_type?: string
+          guest_count?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           created_at: string
@@ -144,7 +192,7 @@ export type Database = {
           id: string
           is_read: boolean
           message: string
-          order_id: string
+          order_id: string | null
         }
         Insert: {
           created_at?: string
@@ -152,7 +200,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           message: string
-          order_id: string
+          order_id?: string | null
         }
         Update: {
           created_at?: string
@@ -160,16 +208,9 @@ export type Database = {
           id?: string
           is_read?: boolean
           message?: string
-          order_id?: string
+          order_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "notifications_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "notifications_order_id_fkey"
             columns: ["order_id"]
@@ -398,7 +439,12 @@ export type Database = {
         | "ready"
         | "picked_up"
         | "cancelled"
-      payment_status: "unpaid" | "paid" | "refunded" | "failed" | "pay_on_pickup"
+      payment_status:
+        | "unpaid"
+        | "paid"
+        | "refunded"
+        | "failed"
+        | "pay_on_pickup"
     }
     CompositeTypes: {
       [_ in never]: never

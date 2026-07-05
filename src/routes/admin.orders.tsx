@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ShoppingBag, Volume2, VolumeX } from "lucide-react";
 import { formatCents } from "@/lib/price-utils";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/admin/orders")({
   component: OrdersPage,
@@ -230,12 +231,12 @@ function OrdersPage() {
                     </p>
                     <p className="text-xs text-slate-500">
                       Placed{" "}
-                      {new Date(o.created_at).toLocaleTimeString([], {
+                      {formatInSiteTime(o.created_at, {
                         hour: "numeric",
                         minute: "2-digit",
                       })}{" "}
                       · Pickup{" "}
-                      {new Date(o.pickup_time).toLocaleTimeString([], {
+                      {formatInSiteTime(o.pickup_time, {
                         hour: "numeric",
                         minute: "2-digit",
                       })}

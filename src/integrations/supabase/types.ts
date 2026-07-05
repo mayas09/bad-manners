@@ -137,48 +137,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notifications: {
-        Row: {
-          created_at: string
-          customer_id: string
-          id: string
-          is_read: boolean
-          message: string
-          order_id: string
-        }
-        Insert: {
-          created_at?: string
-          customer_id: string
-          id?: string
-          is_read?: boolean
-          message: string
-          order_id: string
-        }
-        Update: {
-          created_at?: string
-          customer_id?: string
-          id?: string
-          is_read?: boolean
-          message?: string
-          order_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       order_items: {
         Row: {
           created_at: string
@@ -234,7 +192,6 @@ export type Database = {
           customer_id: string
           customer_name: string
           customer_phone: string
-          discount_cents: number
           id: string
           order_notes: string | null
           order_number: number
@@ -253,7 +210,6 @@ export type Database = {
           customer_id: string
           customer_name: string
           customer_phone: string
-          discount_cents?: number
           id?: string
           order_notes?: string | null
           order_number?: number
@@ -272,7 +228,6 @@ export type Database = {
           customer_id?: string
           customer_name?: string
           customer_phone?: string
-          discount_cents?: number
           id?: string
           order_notes?: string | null
           order_number?: number
@@ -293,10 +248,8 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string | null
-          free_drinks_available: number
           id: string
           last_name: string | null
-          loyalty_count: number
           phone: string | null
           updated_at: string
         }
@@ -305,10 +258,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
-          free_drinks_available?: number
           id: string
           last_name?: string | null
-          loyalty_count?: number
           phone?: string | null
           updated_at?: string
         }
@@ -317,10 +268,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
-          free_drinks_available?: number
           id?: string
           last_name?: string | null
-          loyalty_count?: number
           phone?: string | null
           updated_at?: string
         }
@@ -398,7 +347,7 @@ export type Database = {
         | "ready"
         | "picked_up"
         | "cancelled"
-      payment_status: "unpaid" | "paid" | "refunded" | "failed" | "pay_on_pickup"
+      payment_status: "unpaid" | "paid" | "refunded" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -528,7 +477,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       order_status: ["pending", "confirmed", "ready", "picked_up", "cancelled"],
-      payment_status: ["unpaid", "paid", "refunded", "failed", "pay_on_pickup"],
+      payment_status: ["unpaid", "paid", "refunded", "failed"],
     },
   },
 } as const

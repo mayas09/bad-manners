@@ -9,6 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import {
+  formatInSiteTime,
+  formatPlainDateInSiteTime,
+  getSiteTodayInputValue,
+} from "@/lib/time-utils";
 
 export const Route = createFileRoute("/account/events")({
   component: EventsPage,
@@ -144,7 +149,7 @@ function EventsPage() {
               <Input
                 name="event_date"
                 type="date"
-                min={new Date().toISOString().split("T")[0]}
+                min={getSiteTodayInputValue()}
               />
             </div>
             <div className="grid gap-1.5">
@@ -205,7 +210,7 @@ function EventsPage() {
                       <p className="font-display text-lg">{r.event_type}</p>
                       <p className="text-sm text-muted-foreground">
                         {r.event_date
-                          ? new Date(r.event_date).toLocaleDateString()
+                          ? formatPlainDateInSiteTime(r.event_date)
                           : "Date TBD"}
                         {r.event_time && ` · ${r.event_time.slice(0, 5)}`}
                         {r.guest_count && ` · ${r.guest_count} guests`}
@@ -225,7 +230,11 @@ function EventsPage() {
                     </div>
                   )}
                   <p className="mt-2 text-xs text-slate-400">
-                    Submitted {new Date(r.created_at).toLocaleString()}
+                    Submitted{" "}
+                    {formatInSiteTime(r.created_at, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </p>
                 </div>
               );

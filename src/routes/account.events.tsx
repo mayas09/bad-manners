@@ -28,7 +28,7 @@ type CateringRequest = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
-  pending: { label: "Pending", classes: "bg-amber-100 text-amber-800 border-amber-300" },
+  pending: { label: "Pending", classes: "bg-gray-100 text-gray-800 border-gray-300" },
   under_review: {
     label: "Under Review",
     classes: "bg-blue-100 text-blue-800 border-blue-300",
@@ -57,6 +57,7 @@ function EventsPage() {
       .select(
         "id,event_type,event_date,event_time,location,guest_count,budget_range,notes,status,created_at",
       )
+      .eq("customer_id", auth.user.id)
       .order("created_at", { ascending: false });
     setRequests((data as CateringRequest[]) ?? []);
   }
@@ -85,7 +86,7 @@ function EventsPage() {
     const { error } = await supabase.from("catering_requests").insert(payload);
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success("Request sent! We'll review shortly.");
+    toast.success("Request sent! We'll be in touch soon 🖤");
     (e.target as HTMLFormElement).reset();
     load();
   }
@@ -140,7 +141,11 @@ function EventsPage() {
             </div>
             <div className="grid gap-1.5">
               <Label>Date</Label>
-              <Input name="event_date" type="date" />
+              <Input
+                name="event_date"
+                type="date"
+                min={new Date().toISOString().split("T")[0]}
+              />
             </div>
             <div className="grid gap-1.5">
               <Label>Time</Label>

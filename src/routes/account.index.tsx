@@ -257,6 +257,68 @@ function AccountHome() {
           )}
         </section>
 
+        <section>
+          <h2 className="font-display text-3xl flex items-center gap-2">
+            <Heart className="size-6 text-[--pink-deep] fill-[--pink-deep]" /> My Favorites
+          </h2>
+          {favorites.length === 0 ? (
+            <p className="mt-4 text-muted-foreground">
+              Tap the heart on any menu item to save it here.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {favorites.map((f) => {
+                const cents = parsePriceToCents(f.price);
+                return (
+                  <div
+                    key={f.id}
+                    className="glass rounded-xl p-3 flex items-center gap-3"
+                  >
+                    <div className="size-16 shrink-0 rounded-lg overflow-hidden bg-[--pink-deep]/10">
+                      {f.image_url && (
+                        <img src={f.image_url} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-lg truncate">{f.name}</p>
+                      {f.price && (
+                        <p className="text-sm text-fire font-semibold">{f.price}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {cents ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            cart.add({
+                              id: `menu:${f.menu_item_id}`,
+                              name: f.name,
+                              unit_price_cents: cents,
+                            });
+                            toast.success(`${f.name} added`);
+                          }}
+                          className="bg-fire text-white h-8 text-xs"
+                        >
+                          <Plus className="size-3.5 mr-1" /> Add
+                        </Button>
+                      ) : null}
+                      <button
+                        onClick={() => removeFavorite(f.id)}
+                        aria-label="Remove favorite"
+                        className="text-xs text-slate-500 hover:text-[--pink-deep]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+
+
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Loyalty punch card</h2>
           {(auth.profile?.free_drinks_available ?? 0) > 0 && (

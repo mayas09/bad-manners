@@ -26,6 +26,12 @@ type Order = {
   created_at: string;
 };
 
+type FavoriteRow = {
+  id: string;
+  menu_item_id: string;
+  menu_items: { name: string | null; price: string | null; image_url: string | null } | null;
+};
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800 border-amber-300",
   confirmed: "bg-blue-100 text-blue-800 border-blue-300",
@@ -46,12 +52,19 @@ function AccountHome() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [loyaltyMilestone, setLoyaltyMilestone] = useState(5);
   const [favorites, setFavorites] = useState<
-    { id: string; menu_item_id: string; name: string; price: string | null; image_url: string | null }[]
+    {
+      id: string;
+      menu_item_id: string;
+      name: string;
+      price: string | null;
+      image_url: string | null;
+    }[]
   >([]);
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });
-  }, [auth.loading, auth.user, nav]);
+  if (!auth.loading && auth.role === "admin") nav({ to: "/admin" });
+  }, [auth.loading, auth.user, auth.role, nav]);
 
   useEffect(() => {
     if (auth.profile) {
@@ -72,7 +85,7 @@ function AccountHome() {
         if (Number.isFinite(n) && n > 0) setLoyaltyMilestone(n);
       });
   }, []);
-  
+
   useEffect(() => {
     if (!auth.user) return;
     const uid = auth.user.id;
@@ -118,7 +131,7 @@ function AccountHome() {
         .select("id, menu_item_id, menu_items(name, price, image_url)")
         .eq("customer_id", uid);
       setFavorites(
-        ((data as any[]) ?? []).map((r) => ({
+        ((data as FavoriteRow[] | null) ?? []).map((r) => ({
           id: r.id,
           menu_item_id: r.menu_item_id,
           name: r.menu_items?.name ?? "Item",
@@ -160,7 +173,7 @@ function AccountHome() {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "cancelled" } : o)));
   }
 
-  if (auth.loading || !auth.user)
+  if (auth.loading || !auth.user || auth.role === "admin")
     return <div className="min-h-screen grid place-items-center">Loading…</div>;
 
   return (
@@ -216,7 +229,8 @@ function AccountHome() {
                     {formatInSiteTime(o.created_at, {
                       dateStyle: "medium",
                       timeStyle: "short",
-                    })} · Pickup{" "}
+                    })}{" "}
+                    · Pickup{" "}
                     {formatInSiteTime(o.pickup_time, {
                       hour: "numeric",
                       minute: "2-digit",
@@ -270,10 +284,7 @@ function AccountHome() {
               {favorites.map((f) => {
                 const cents = parsePriceToCents(f.price);
                 return (
-                  <div
-                    key={f.id}
-                    className="glass rounded-xl p-3 flex items-center gap-3"
-                  >
+                  <div key={f.id} className="glass rounded-xl p-3 flex items-center gap-3">
                     <div className="size-16 shrink-0 rounded-lg overflow-hidden bg-[--pink-deep]/10">
                       {f.image_url && (
                         <img src={f.image_url} alt="" className="h-full w-full object-cover" />
@@ -281,9 +292,7 @@ function AccountHome() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-display text-lg truncate">{f.name}</p>
-                      {f.price && (
-                        <p className="text-sm text-fire font-semibold">{f.price}</p>
-                      )}
+                      {f.price && <p className="text-sm text-fire font-semibold">{f.price}</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {cents ? (
@@ -317,8 +326,6 @@ function AccountHome() {
           )}
         </section>
 
-
-
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Loyalty punch card</h2>
           {(auth.profile?.free_drinks_available ?? 0) > 0 && (
@@ -343,7 +350,7 @@ function AccountHome() {
             {auth.profile?.loyalty_count ?? 0} / {loyaltyMilestone} punches toward your free drink
           </p>
         </section>
-        
+
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Profile</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -166,16 +166,31 @@ function SectionEditor({
     reload();
   }
   async function saveRow(r: MenuRow) {
+    // If discount is set, recompute the customer-facing price string.
+    let priceToSave = r.price;
+    let originalCents = r.original_price_cents;
+    // If admin typed a price and no original set yet, treat it as the base.
+    if (originalCents == null) originalCents = parsePriceInput(r.price);
+    const { finalCents, priceStr } = computeDiscountedPrice({
+      original_price_cents: originalCents,
+      discount_type: r.discount_type,
+      discount_value: r.discount_value,
+    });
+    if (priceStr) priceToSave = priceStr;
+
     const { error } = await supabase
       .from("menu_items")
       .update({
         name: r.name,
-        price: r.price,
+        price: priceToSave,
         note: r.note,
         is_gf_v: r.is_gf_v,
         is_sold_out: r.is_sold_out,
         sort_order: r.sort_order,
         image_url: r.image_url,
+        original_price_cents: finalCents != null ? originalCents : null,
+        discount_type: r.discount_type,
+        discount_value: r.discount_value,
       })
       .eq("id", r.id);
     if (error) return toast.error(error.message);

@@ -53,12 +53,7 @@ type MenuRow = {
   discount_value: number | null;
 };
 
-function parsePriceInput(s: string | null | undefined): number | null {
-  if (!s) return null;
-  const m = String(s).match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
-  if (!m) return null;
-  return Math.round(parseFloat(m[1]) * 100);
-}
+const MENU_IMAGE_BUCKET = "products";
 
 function formatCentsShort(c: number) {
   return `$${(c / 100).toFixed(2)}`;
@@ -80,6 +75,19 @@ function computeDiscountedPrice(row: {
     finalCents = Math.max(0, row.original_price_cents - Math.round(row.discount_value * 100));
   }
   return { finalCents, priceStr: formatCentsShort(finalCents) };
+}
+
+function computePriceCents(row: {
+  original_price_cents: number | null;
+  discount_type: "percent" | "amount" | null;
+  discount_value: number | null;
+}): number | null {
+  if (row.original_price_cents == null) return null;
+  if (!row.discount_type || row.discount_value == null) return row.original_price_cents;
+  if (row.discount_type === "percent") {
+    return Math.round(row.original_price_cents * (1 - row.discount_value / 100));
+  }
+  return Math.round(row.original_price_cents - row.discount_value * 100);
 }
 
 function MenuPage() {
@@ -168,31 +176,31 @@ function SectionEditor({
   async function saveRow(r: MenuRow) {
     // If discount is set, recompute the customer-facing price string.
     let priceToSave = r.price;
-    let originalCents = r.original_price_cents;
-    // If admin typed a price and no original set yet, treat it as the base.
-    if (originalCents == null) originalCents = parsePriceInput(r.price);
-    const { finalCents, priceStr } = computeDiscountedPrice({
+    const originalCents = r.original_price_cents;
+    const discountInput = {
       original_price_cents: originalCents,
       discount_type: r.discount_type,
       discount_value: r.discount_value,
-    });
+    };
+    const { finalCents, priceStr } = computeDiscountedPrice(discountInput);
+    const priceCents = computePriceCents(discountInput);
     if (priceStr) priceToSave = priceStr;
 
-    const { error } = await supabase
-      .from("menu_items")
-      .update({
-        name: r.name,
-        price: priceToSave,
-        note: r.note,
-        is_gf_v: r.is_gf_v,
-        is_sold_out: r.is_sold_out,
-        sort_order: r.sort_order,
-        image_url: r.image_url,
-        original_price_cents: finalCents != null ? originalCents : null,
-        discount_type: r.discount_type,
-        discount_value: r.discount_value,
-      })
-      .eq("id", r.id);
+    const payload: Partial<MenuRow> & { price_cents?: number } = {
+      name: r.name,
+      price: priceToSave,
+      note: r.note,
+      is_gf_v: r.is_gf_v,
+      is_sold_out: r.is_sold_out,
+      sort_order: r.sort_order,
+      image_url: r.image_url,
+      original_price_cents: finalCents != null ? originalCents : null,
+      discount_type: r.discount_type,
+      discount_value: r.discount_value,
+    };
+    if (priceCents != null) payload.price_cents = priceCents;
+
+    const { error } = await supabase.from("menu_items").update(payload).eq("id", r.id);
     if (error) return toast.error(error.message);
     toast.success("Saved");
   }
@@ -209,6 +217,15 @@ function SectionEditor({
     updateLocal(r.id, { is_sold_out: v });
     const { error } = await supabase.from("menu_items").update({ is_sold_out: v }).eq("id", r.id);
     if (error) toast.error(error.message);
+    const { error: inventoryError } = await supabase.from("inventory").upsert(
+      {
+        menu_item_id: r.id,
+        available: !v,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "menu_item_id" },
+    );
+    if (inventoryError) toast.error(inventoryError.message);
   }
 
   async function uploadImage(r: MenuRow, file: File) {
@@ -228,22 +245,19 @@ function SectionEditor({
       compressed = file;
     }
     const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `menu/${r.id}/${Date.now()}-${safeName}`;
+    const path = `products/menu/${r.id}/${Date.now()}-${safeName}`;
     const up = await supabase.storage
-      .from("site-images")
+      .from(MENU_IMAGE_BUCKET)
       .upload(path, compressed, { upsert: true, contentType: compressed.type });
     if (up.error) return toast.error(up.error.message);
     const signed = await supabase.storage
-      .from("site-images")
+      .from(MENU_IMAGE_BUCKET)
       .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
     if (signed.error || !signed.data)
       return toast.error(signed.error?.message ?? "Failed to sign URL");
     const url = signed.data.signedUrl;
     updateLocal(r.id, { image_url: url });
-    const { error } = await supabase
-      .from("menu_items")
-      .update({ image_url: url })
-      .eq("id", r.id);
+    const { error } = await supabase.from("menu_items").update({ image_url: url }).eq("id", r.id);
     if (error) return toast.error(error.message);
     toast.success("Image uploaded");
   }
@@ -252,13 +266,9 @@ function SectionEditor({
     if (!r.image_url) return;
     if (!confirm("Remove this image?")) return;
     updateLocal(r.id, { image_url: null });
-    const { error } = await supabase
-      .from("menu_items")
-      .update({ image_url: null })
-      .eq("id", r.id);
+    const { error } = await supabase.from("menu_items").update({ image_url: null }).eq("id", r.id);
     if (error) toast.error(error.message);
   }
-
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -449,7 +459,9 @@ function SortableRow({
             type="number"
             step="0.01"
             min="0"
-            value={row.original_price_cents != null ? (row.original_price_cents / 100).toFixed(2) : ""}
+            value={
+              row.original_price_cents != null ? (row.original_price_cents / 100).toFixed(2) : ""
+            }
             onChange={(e) =>
               onUpdate({
                 original_price_cents: e.target.value
@@ -505,12 +517,11 @@ function SortableRow({
             return (
               <span>
                 Customer sees:{" "}
-                <span className="font-semibold text-pink-600">{preview.priceStr}</span>
-                {row.original_price_cents != null && (
-                  <span className="ml-1 text-slate-400 line-through">
-                    {formatCentsShort(row.original_price_cents)}
-                  </span>
-                )}
+                <span className="font-semibold text-pink-600">{preview.priceStr}</span> (was{" "}
+                {row.original_price_cents != null
+                  ? formatCentsShort(row.original_price_cents)
+                  : "—"}
+                )
               </span>
             );
           })()}

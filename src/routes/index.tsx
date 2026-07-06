@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Component, useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { CartButton, CartDrawer } from "@/components/site/CartDrawer";
 import { AccountNav } from "@/components/site/AccountNav";
 import { NotificationBell } from "@/components/site/NotificationBell";
 import { parsePriceToCents, formatCents } from "@/lib/price-utils";
+import { useFavorites } from "@/lib/use-favorites";
 import { toast } from "sonner";
 
 /**

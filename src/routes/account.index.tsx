@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { formatCents } from "@/lib/price-utils";
+import { formatCents, parsePriceToCents } from "@/lib/price-utils";
 import { formatInSiteTime } from "@/lib/time-utils";
+import { useCart } from "@/lib/cart-context";
+import { Heart, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/account/")({
   component: AccountHome,

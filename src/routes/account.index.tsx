@@ -111,11 +111,12 @@ function AccountHome() {
 
   useEffect(() => {
     if (!auth.user) return;
+    const uid = auth.user.id;
     (async () => {
       const { data } = await supabase
         .from("favorites")
         .select("id, menu_item_id, menu_items(name, price, image_url)")
-        .eq("customer_id", auth.user.id);
+        .eq("customer_id", uid);
       setFavorites(
         ((data as any[]) ?? []).map((r) => ({
           id: r.id,

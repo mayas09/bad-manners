@@ -53,7 +53,8 @@ function EventsPage() {
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });
-  }, [auth.loading, auth.user, nav]);
+    if (!auth.loading && auth.role === "admin") nav({ to: "/admin" });
+  }, [auth.loading, auth.user, auth.role, nav]);
 
   async function load() {
     if (!auth.user) return;
@@ -96,7 +97,7 @@ function EventsPage() {
     load();
   }
 
-  if (auth.loading || !auth.user)
+  if (auth.loading || !auth.user || auth.role === "admin")
     return <div className="min-h-screen grid place-items-center">Loading…</div>;
 
   return (
@@ -146,11 +147,7 @@ function EventsPage() {
             </div>
             <div className="grid gap-1.5">
               <Label>Date</Label>
-              <Input
-                name="event_date"
-                type="date"
-                min={getSiteTodayInputValue()}
-              />
+              <Input name="event_date" type="date" min={getSiteTodayInputValue()} />
             </div>
             <div className="grid gap-1.5">
               <Label>Time</Label>
@@ -209,9 +206,7 @@ function EventsPage() {
                     <div>
                       <p className="font-display text-lg">{r.event_type}</p>
                       <p className="text-sm text-muted-foreground">
-                        {r.event_date
-                          ? formatPlainDateInSiteTime(r.event_date)
-                          : "Date TBD"}
+                        {r.event_date ? formatPlainDateInSiteTime(r.event_date) : "Date TBD"}
                         {r.event_time && ` · ${r.event_time.slice(0, 5)}`}
                         {r.guest_count && ` · ${r.guest_count} guests`}
                       </p>

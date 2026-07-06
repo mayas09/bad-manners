@@ -82,9 +82,12 @@ function LoginPage() {
         await claim({ data: { userId: data.user.id, email: data.user.email ?? email } }).catch(
           () => {},
         );
-        const dest = (search.next as string) || (await resolveRedirect(data.user.id));
+        const roleDest = await resolveRedirect(data.user.id);
+        const requestedDest = search.next as string | undefined;
+        const dest =
+          roleDest === "/admin" ? "/admin" : requestedDest === "/checkout" ? "/checkout" : roleDest;
         toast.success("Welcome back!");
-        nav({ to: dest as any });
+        nav({ to: dest });
       }
     } finally {
       setBusy(false);
@@ -113,9 +116,7 @@ function LoginPage() {
         {forgot ? "Reset your password" : "Sign in"}
       </h1>
       <p className="mt-1 text-sm text-slate-400 text-center">
-        {forgot
-          ? "We'll email you a secure reset link."
-          : "Welcome back. Sign in to your account."}
+        {forgot ? "We'll email you a secure reset link." : "Welcome back. Sign in to your account."}
       </p>
 
       {!forgot && (
@@ -210,7 +211,7 @@ function LoginPage() {
           Don't have an account?{" "}
           <Link
             to="/account/signup"
-            search={search as any}
+            search={search}
             className="text-pink-400 font-medium hover:text-pink-300"
           >
             Sign up

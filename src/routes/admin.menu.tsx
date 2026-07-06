@@ -438,6 +438,84 @@ function SortableRow({
           <Trash2 className="size-4 text-red-500" />
         </Button>
       </div>
+
+      {/* Discount editor — full row */}
+      <div className="sm:col-span-12 mt-2 pt-3 border-t border-slate-100 grid gap-2 sm:grid-cols-12 items-end">
+        <div className="sm:col-span-3">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">
+            Original price ($)
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={row.original_price_cents != null ? (row.original_price_cents / 100).toFixed(2) : ""}
+            onChange={(e) =>
+              onUpdate({
+                original_price_cents: e.target.value
+                  ? Math.round(parseFloat(e.target.value) * 100)
+                  : null,
+              })
+            }
+            placeholder="e.g. 5.50"
+          />
+        </div>
+        <div className="sm:col-span-3">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">
+            Discount type
+          </label>
+          <select
+            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+            value={row.discount_type ?? ""}
+            onChange={(e) =>
+              onUpdate({
+                discount_type: (e.target.value || null) as "percent" | "amount" | null,
+              })
+            }
+          >
+            <option value="">None</option>
+            <option value="percent">Percent (%)</option>
+            <option value="amount">Fixed ($)</option>
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">Value</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            disabled={!row.discount_type}
+            value={row.discount_value ?? ""}
+            onChange={(e) =>
+              onUpdate({
+                discount_value: e.target.value ? parseFloat(e.target.value) : null,
+              })
+            }
+            placeholder={row.discount_type === "percent" ? "20" : "1.50"}
+          />
+        </div>
+        <div className="sm:col-span-4 text-xs text-slate-600">
+          {(() => {
+            const preview = computeDiscountedPrice({
+              original_price_cents: row.original_price_cents,
+              discount_type: row.discount_type,
+              discount_value: row.discount_value,
+            });
+            if (!preview.priceStr) return <span className="text-slate-400">No discount</span>;
+            return (
+              <span>
+                Customer sees:{" "}
+                <span className="font-semibold text-pink-600">{preview.priceStr}</span>
+                {row.original_price_cents != null && (
+                  <span className="ml-1 text-slate-400 line-through">
+                    {formatCentsShort(row.original_price_cents)}
+                  </span>
+                )}
+              </span>
+            );
+          })()}
+        </div>
+      </div>
     </div>
   );
 }

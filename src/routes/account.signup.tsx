@@ -78,6 +78,44 @@ function SignupPage() {
     if (result.error) toast.error("Google sign-in failed");
   }
 
+  if (pendingEmail) {
+    return (
+      <AuthShell>
+        <Toaster richColors position="top-center" theme="dark" />
+        <p className="text-xs uppercase tracking-[0.3em] text-pink-400 text-center">Bad Manners</p>
+        <h1 className="mt-2 text-2xl font-semibold text-white text-center">
+          Confirm your email 🖤
+        </h1>
+        <p className="mt-3 text-sm text-slate-300 text-center">
+          We sent a confirmation link to <span className="text-pink-300">{pendingEmail}</span>.
+          Click it to activate your account, then sign in.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              const { error } = await supabase.auth.resend({
+                type: "signup",
+                email: pendingEmail,
+              });
+              if (error) toast.error(error.message);
+              else toast.success("Confirmation email re-sent");
+            }}
+            className="h-11 rounded-md bg-pink-600 hover:bg-pink-500 text-white font-medium"
+          >
+            Resend confirmation email
+          </button>
+          <Link
+            to="/account/login"
+            className="text-center text-sm text-slate-400 hover:text-slate-200"
+          >
+            Back to sign in
+          </Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell>
       <Toaster richColors position="top-center" theme="dark" />
@@ -86,6 +124,7 @@ function SignupPage() {
       <p className="mt-1 text-sm text-slate-400 text-center">
         Order ahead. Skip the line. Get more coffee.
       </p>
+
 
       <div className="mt-6">
         <GoogleButton onClick={google} />

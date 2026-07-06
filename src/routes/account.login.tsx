@@ -37,11 +37,13 @@ function LoginPage() {
   const [forgot, setForgot] = useState(false);
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [passErr, setPassErr] = useState<string | null>(null);
+  const [needsConfirm, setNeedsConfirm] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setEmailErr(null);
     setPassErr(null);
+    setNeedsConfirm(null);
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
@@ -68,7 +70,12 @@ function LoginPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setPassErr(error.message);
+        if (/confirm/i.test(error.message)) {
+          setNeedsConfirm(email);
+          setPassErr(null);
+        } else {
+          setPassErr(error.message);
+        }
         return;
       }
       if (data.user) {
@@ -82,6 +89,13 @@ function LoginPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function resendConfirm() {
+    if (!needsConfirm) return;
+    const { error } = await supabase.auth.resend({ type: "signup", email: needsConfirm });
+    if (error) toast.error(error.message);
+    else toast.success("Confirmation email re-sent");
   }
 
   async function google() {

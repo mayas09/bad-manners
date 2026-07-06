@@ -418,6 +418,48 @@ function MenuItemImage({ src, alt }: { src?: string | null; alt: string }) {
   );
 }
 
+function FavoriteHeart({ itemId }: { itemId?: string }) {
+  const fav = useFavorites();
+  const nav = useNavigate();
+  if (!itemId) return null;
+  const active = fav.ids.has(itemId);
+  return (
+    <button
+      type="button"
+      onClick={async (e) => {
+        e.stopPropagation();
+        const res = await fav.toggle(itemId);
+        if (res.needsAuth) {
+          toast("Sign in to save favorites", { duration: 1600 });
+          nav({ to: "/account/login" });
+          return;
+        }
+        toast.success(res.isFav ? "Added to favorites 🖤" : "Removed from favorites", {
+          duration: 1200,
+        });
+      }}
+      aria-label={active ? "Remove favorite" : "Add favorite"}
+      aria-pressed={active}
+      className="absolute top-2 right-2 z-10 grid size-9 place-items-center rounded-full bg-white/90 backdrop-blur-sm text-[color:var(--pink-deep)] shadow-md hover:bg-white transition-colors"
+    >
+      <Heart className={`size-4 ${active ? "fill-current" : ""}`} strokeWidth={2.25} />
+    </button>
+  );
+}
+
+function DiscountBadge({ item }: { item: import("@/components/site/menu-data").MenuItem }) {
+  if (!item.discount_type || !item.discount_value) return null;
+  const label =
+    item.discount_type === "percent"
+      ? `-${Math.round(item.discount_value)}%`
+      : `-$${item.discount_value.toFixed(2)}`;
+  return (
+    <span className="absolute top-2 left-2 z-10 inline-flex items-center rounded-full bg-[color:var(--pink-deep)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+      {label}
+    </span>
+  );
+}
+
 function MenuSection({
   menu: MENU,
 }: {
@@ -467,12 +509,20 @@ function MenuSection({
                 {s.items.map((item, i) => {
                   const cents = parsePriceToCents(item.price);
                   const canOrder = !!cents && !item.is_sold_out;
+                  const hasDiscount =
+                    !!item.original_price_cents &&
+                    !!cents &&
+                    item.original_price_cents > cents;
                   return (
                     <div
                       key={item.id ?? i}
                       className={`tilt-card glass rounded-2xl p-5 flex flex-col gap-3 overflow-hidden ${item.is_sold_out ? "opacity-70" : ""}`}
                     >
-                      <MenuItemImage src={item.image_url} alt={item.name} />
+                      <div className="relative -mx-5 -mt-5 mb-1">
+                        <MenuItemImage src={item.image_url} alt={item.name} />
+                        {hasDiscount && <DiscountBadge item={item} />}
+                        <FavoriteHeart itemId={item.id} />
+                      </div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -490,11 +540,18 @@ function MenuSection({
                           )}
                         </div>
                         {item.price && (
-                          <span
-                            className={`font-display text-lg whitespace-nowrap ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}
-                          >
-                            {item.price}
-                          </span>
+                          <div className="text-right whitespace-nowrap">
+                            {hasDiscount && (
+                              <div className="text-xs text-muted-foreground line-through">
+                                {formatCents(item.original_price_cents!)}
+                              </div>
+                            )}
+                            <span
+                              className={`font-display text-lg ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}
+                            >
+                              {item.price}
+                            </span>
+                          </div>
                         )}
                       </div>
                       {canOrder && <AddToCartBtn item={item} cents={cents!} />}

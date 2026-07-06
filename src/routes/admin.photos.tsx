@@ -31,6 +31,15 @@ const IMAGE_SLOTS: { key: string; label: string; category: string }[] = [
   { key: "gallery_6", label: "Gallery 6", category: "gallery" },
 ];
 
+function bucketForCategory(category: string) {
+  return category === "banner" ? "banners" : "gallery";
+}
+
+function bucketForExistingRow(row: ImgRow) {
+  if (row.url.includes("/site-images/") || row.url.includes("/site-images?")) return "site-images";
+  return bucketForCategory(row.category);
+}
+
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`;
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
@@ -94,16 +103,18 @@ function PhotosPage() {
       const m = await readImageMeta(compressed).catch(() => null);
 
       const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const category = IMAGE_SLOTS.find((s) => s.key === slotKey)?.category ?? "general";
+      const bucket = bucketForCategory(category);
       const path = `${slotKey}/${Date.now()}-${safeName}`;
       const up = await supabase.storage
-        .from("site-images")
+        .from(bucket)
         .upload(path, compressed, { upsert: true, contentType: compressed.type });
       if (up.error) {
         toast.error(up.error.message);
         return;
       }
       const signed = await supabase.storage
-        .from("site-images")
+        .from(bucket)
         .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
       if (signed.error || !signed.data) {
         toast.error(signed.error?.message ?? "Failed to sign URL");
@@ -115,13 +126,18 @@ function PhotosPage() {
         key: slotKey,
         url: signed.data.signedUrl,
         storage_path: path,
-        category: IMAGE_SLOTS.find((s) => s.key === slotKey)?.category ?? "general",
+        category,
       };
       let resp;
       if (existing) {
         resp = await supabase.from("site_images").update(payload).eq("key", slotKey);
-        if (existing.storage_path && existing.storage_path !== path) {
-          await supabase.storage.from("site-images").remove([existing.storage_path]);
+        const existingBucket = bucketForExistingRow(existing);
+        if (
+          existingBucket !== "site-images" &&
+          existing.storage_path &&
+          existing.storage_path !== path
+        ) {
+          await supabase.storage.from(existingBucket).remove([existing.storage_path]);
         }
       } else {
         resp = await supabase
@@ -146,8 +162,9 @@ function PhotosPage() {
     const existing = rows.find((r) => r.key === slotKey);
     if (!existing) return;
     if (!confirm("Remove this image?")) return;
-    if (existing.storage_path)
-      await supabase.storage.from("site-images").remove([existing.storage_path]);
+    const existingBucket = bucketForExistingRow(existing);
+    if (existingBucket !== "site-images" && existing.storage_path)
+      await supabase.storage.from(existingBucket).remove([existing.storage_path]);
     const { error } = await supabase.from("site_images").delete().eq("key", slotKey);
     if (error) return toast.error(error.message);
     setMeta((s) => {

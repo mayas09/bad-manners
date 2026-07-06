@@ -170,6 +170,18 @@ function LoginPage() {
               className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-pink-500 focus-visible:border-pink-500"
             />
             {passErr && <p className="text-xs text-red-400">{passErr}</p>}
+            {needsConfirm && (
+              <div className="rounded-md border border-pink-500/40 bg-pink-500/10 px-3 py-2 text-xs text-pink-100">
+                Please confirm your email first. 🖤{" "}
+                <button
+                  type="button"
+                  onClick={resendConfirm}
+                  className="underline font-semibold hover:text-white"
+                >
+                  Resend confirmation email
+                </button>
+              </div>
+            )}
           </div>
         )}
 

@@ -5,10 +5,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { finalizeOrder } from "@/lib/checkout.functions";
 import { formatCents } from "@/lib/price-utils";
 import { formatInSiteTime } from "@/lib/time-utils";
+import { useCart } from "@/lib/cart-context";
 import { CheckCircle2, Clock } from "lucide-react";
 import { z } from "zod";
 
 const searchSchema = z.object({ session_id: z.string().optional() });
+const STRIPE_DRAFT_KEY = "bm_stripe_checkout_draft_v1";
 
 export const Route = createFileRoute("/order/$orderId")({
   validateSearch: searchSchema,
@@ -26,10 +28,13 @@ type OrderData = {
   items: { name: string; quantity: number; unit_price_cents: number }[];
 };
 
+type OrderRow = Omit<OrderData, "items">;
+
 function OrderPage() {
   const { orderId } = Route.useParams();
   const { session_id } = useSearch({ from: "/order/$orderId" });
   const finalize = useServerFn(finalizeOrder);
+  const cart = useCart();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +42,14 @@ function OrderPage() {
     (async () => {
       if (session_id) {
         try {
-          await finalize({ data: { orderId, sessionId: session_id } });
+          const raw = sessionStorage.getItem(STRIPE_DRAFT_KEY);
+          const draft = raw ? JSON.parse(raw) : null;
+          if (!draft || draft.orderId !== orderId) throw new Error("Missing checkout draft");
+          const result = await finalize({ data: { ...draft, sessionId: session_id } });
+          if (result?.paid) {
+            cart.clear();
+            sessionStorage.removeItem(STRIPE_DRAFT_KEY);
+          }
         } catch (e) {
           console.error("Order payment verification failed", e);
         }
@@ -51,10 +63,10 @@ function OrderPage() {
         .from("order_items")
         .select("name,quantity,unit_price_cents")
         .eq("order_id", orderId);
-      if (o) setOrder({ ...(o as any), items: items ?? [] });
+      if (o) setOrder({ ...(o as OrderRow), items: items ?? [] });
       setLoading(false);
     })();
-  }, [orderId, session_id, finalize]);
+  }, [orderId, session_id, finalize, cart]);
 
   if (loading) return <div className="min-h-screen grid place-items-center">Loading…</div>;
   if (!order)

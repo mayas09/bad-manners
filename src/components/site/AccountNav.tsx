@@ -1,5 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { User, LogOut, ShoppingBag as OrdersIcon, CalendarHeart } from "lucide-react";
+import {
+  User,
+  LogOut,
+  ShoppingBag as OrdersIcon,
+  CalendarHeart,
+  LayoutDashboard,
+} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
@@ -33,6 +39,7 @@ export function AccountNav() {
 
   const first = auth.profile?.first_name || auth.user.email?.split("@")[0] || "You";
   const initial = (first[0] || "?").toUpperCase();
+  const isAdmin = auth.role === "admin";
 
   return (
     <div ref={ref} className="relative">
@@ -50,20 +57,32 @@ export function AccountNav() {
           <div className="px-3 py-2 border-b border-slate-100">
             <p className="text-xs text-muted-foreground truncate">{auth.user.email}</p>
           </div>
-          <Link
-            to="/account"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            <OrdersIcon className="size-4" /> My Orders
-          </Link>
-          <Link
-            to="/account/events"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            <CalendarHeart className="size-4" /> Catering & Events
-          </Link>
+          {isAdmin ? (
+            <Link
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              <LayoutDashboard className="size-4" /> Admin Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+              >
+                <OrdersIcon className="size-4" /> My Orders
+              </Link>
+              <Link
+                to="/account/events"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+              >
+                <CalendarHeart className="size-4" /> Catering & Events
+              </Link>
+            </>
+          )}
           <button
             onClick={async () => {
               await supabase.auth.signOut();

@@ -394,7 +394,15 @@ function AddToCartBtn({ item, cents }: { item: { id?: string; name: string }; ce
   );
 }
 
-function MenuItemImage({ src, alt }: { src?: string | null; alt: string }) {
+function MenuItemImage({
+  src,
+  alt,
+  overlay,
+}: {
+  src?: string | null;
+  alt: string;
+  overlay?: ReactNode;
+}) {
   return (
     <div className="relative -mx-5 -mt-5 mb-1 aspect-[16/9] overflow-hidden rounded-t-2xl bg-[color:var(--pink-deep)]">
       {src ? (
@@ -414,6 +422,7 @@ function MenuItemImage({ src, alt }: { src?: string | null; alt: string }) {
           />
         </div>
       )}
+      {overlay}
     </div>
   );
 }

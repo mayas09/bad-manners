@@ -37,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
 function AccountHome() {
   const auth = useCustomerAuth();
   const nav = useNavigate();
+  const cart = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [first, setFirst] = useState("");
@@ -44,6 +45,9 @@ function AccountHome() {
   const [phone, setPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [loyaltyMilestone, setLoyaltyMilestone] = useState(5);
+  const [favorites, setFavorites] = useState<
+    { id: string; menu_item_id: string; name: string; price: string | null; image_url: string | null }[]
+  >([]);
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });

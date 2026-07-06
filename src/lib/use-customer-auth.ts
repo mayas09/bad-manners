@@ -13,6 +13,8 @@ export type CustomerAuth = {
   loading: boolean;
   user: { id: string; email: string | null } | null;
   profile: Profile | null;
+  role: "admin" | "customer" | null;
+  isAdmin: boolean;
   refresh: () => Promise<void>;
 };
 
@@ -21,17 +23,20 @@ export function useCustomerAuth(): CustomerAuth {
     loading: true,
     user: null,
     profile: null,
+    role: null,
+    isAdmin: false,
   });
 
   async function load() {
     let u: { id: string; email: string | null } | null = null;
     try {
       const { data } = await supabase.auth.getUser();
-      if (!data.user) return setState({ loading: false, user: null, profile: null });
+      if (!data.user)
+        return setState({ loading: false, user: null, profile: null, role: null, isAdmin: false });
       u = { id: data.user.id, email: data.user.email ?? null };
     } catch (err) {
       console.error("Failed to load auth user", err);
-      return setState({ loading: false, user: null, profile: null });
+      return setState({ loading: false, user: null, profile: null, role: null, isAdmin: false });
     }
 
     try {
@@ -58,6 +63,14 @@ export function useCustomerAuth(): CustomerAuth {
         ).data;
       }
 
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      const isAdmin = !!adminRole;
+      
       setState({
         loading: false,
         user: u,
@@ -68,6 +81,8 @@ export function useCustomerAuth(): CustomerAuth {
           loyalty_count: p?.loyalty_count ?? 0,
           free_drinks_available: p?.free_drinks_available ?? 0,
         },
+        role: isAdmin ? "admin" : "customer",
+        isAdmin,
       });
     } catch (err) {
       console.error("Failed to load customer profile", err);
@@ -81,6 +96,8 @@ export function useCustomerAuth(): CustomerAuth {
           loyalty_count: 0,
           free_drinks_available: 0,
         },
+        role: "customer",
+        isAdmin: false,
       });
     }
   }

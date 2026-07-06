@@ -109,6 +109,30 @@ function AccountHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);
 
+  useEffect(() => {
+    if (!auth.user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("favorites")
+        .select("id, menu_item_id, menu_items(name, price, image_url)")
+        .eq("customer_id", auth.user.id);
+      setFavorites(
+        ((data as any[]) ?? []).map((r) => ({
+          id: r.id,
+          menu_item_id: r.menu_item_id,
+          name: r.menu_items?.name ?? "Item",
+          price: r.menu_items?.price ?? null,
+          image_url: r.menu_items?.image_url ?? null,
+        })),
+      );
+    })();
+  }, [auth.user]);
+
+  async function removeFavorite(favId: string) {
+    setFavorites((f) => f.filter((x) => x.id !== favId));
+    await supabase.from("favorites").delete().eq("id", favId);
+  }
+
   async function saveProfile() {
     if (!auth.user) return;
     setSavingProfile(true);

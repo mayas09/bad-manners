@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          event_type: string
+          id: string
+          menu_item_id: string | null
+          order_id: string | null
+          value_cents: number | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          event_type: string
+          id?: string
+          menu_item_id?: string | null
+          order_id?: string | null
+          value_cents?: number | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          event_type?: string
+          id?: string
+          menu_item_id?: string | null
+          order_id?: string | null
+          value_cents?: number | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           hours_text: string
@@ -53,6 +104,33 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string | null
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -140,15 +218,76 @@ export type Database = {
         }
         Relationships: []
       }
+      favorites: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          menu_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          menu_item_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          menu_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory: {
+        Row: {
+          available: boolean
+          id: string
+          menu_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          id?: string
+          menu_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          id?: string
+          menu_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: true
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           created_at: string
+          discount_type: string | null
+          discount_value: number | null
           id: string
           image_url: string | null
           is_gf_v: boolean
           is_sold_out: boolean
           name: string
           note: string | null
+          original_price_cents: number | null
           price: string | null
           price_cents: number | null
           section: string
@@ -157,12 +296,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           image_url?: string | null
           is_gf_v?: boolean
           is_sold_out?: boolean
           name: string
           note?: string | null
+          original_price_cents?: number | null
           price?: string | null
           price_cents?: number | null
           section: string
@@ -171,12 +313,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           image_url?: string | null
           is_gf_v?: boolean
           is_sold_out?: boolean
           name?: string
           note?: string | null
+          original_price_cents?: number | null
           price?: string | null
           price_cents?: number | null
           section?: string
@@ -328,6 +473,41 @@ export type Database = {
         }
         Relationships: []
       }
+      product_images: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          sort_order?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -366,6 +546,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      receipts: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          order_id: string
+          receipt_number: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          order_id: string
+          receipt_number: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          order_id?: string
+          receipt_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_images: {
         Row: {

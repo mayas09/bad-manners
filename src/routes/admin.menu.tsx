@@ -48,7 +48,39 @@ type MenuRow = {
   is_sold_out: boolean;
   sort_order: number;
   image_url: string | null;
+  original_price_cents: number | null;
+  discount_type: "percent" | "amount" | null;
+  discount_value: number | null;
 };
+
+function parsePriceInput(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const m = String(s).match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
+  if (!m) return null;
+  return Math.round(parseFloat(m[1]) * 100);
+}
+
+function formatCentsShort(c: number) {
+  return `$${(c / 100).toFixed(2)}`;
+}
+
+/** Compute customer-facing price string from original + discount. Returns null if no discount. */
+function computeDiscountedPrice(row: {
+  original_price_cents: number | null;
+  discount_type: "percent" | "amount" | null;
+  discount_value: number | null;
+}): { finalCents: number | null; priceStr: string | null } {
+  if (row.original_price_cents == null || !row.discount_type || row.discount_value == null) {
+    return { finalCents: null, priceStr: null };
+  }
+  let finalCents = row.original_price_cents;
+  if (row.discount_type === "percent") {
+    finalCents = Math.round(row.original_price_cents * (1 - row.discount_value / 100));
+  } else {
+    finalCents = Math.max(0, row.original_price_cents - Math.round(row.discount_value * 100));
+  }
+  return { finalCents, priceStr: formatCentsShort(finalCents) };
+}
 
 function MenuPage() {
   const [rows, setRows] = useState<MenuRow[]>([]);
@@ -134,16 +166,31 @@ function SectionEditor({
     reload();
   }
   async function saveRow(r: MenuRow) {
+    // If discount is set, recompute the customer-facing price string.
+    let priceToSave = r.price;
+    let originalCents = r.original_price_cents;
+    // If admin typed a price and no original set yet, treat it as the base.
+    if (originalCents == null) originalCents = parsePriceInput(r.price);
+    const { finalCents, priceStr } = computeDiscountedPrice({
+      original_price_cents: originalCents,
+      discount_type: r.discount_type,
+      discount_value: r.discount_value,
+    });
+    if (priceStr) priceToSave = priceStr;
+
     const { error } = await supabase
       .from("menu_items")
       .update({
         name: r.name,
-        price: r.price,
+        price: priceToSave,
         note: r.note,
         is_gf_v: r.is_gf_v,
         is_sold_out: r.is_sold_out,
         sort_order: r.sort_order,
         image_url: r.image_url,
+        original_price_cents: finalCents != null ? originalCents : null,
+        discount_type: r.discount_type,
+        discount_value: r.discount_value,
       })
       .eq("id", r.id);
     if (error) return toast.error(error.message);
@@ -390,6 +437,84 @@ function SortableRow({
         <Button size="icon" variant="outline" onClick={onDelete}>
           <Trash2 className="size-4 text-red-500" />
         </Button>
+      </div>
+
+      {/* Discount editor — full row */}
+      <div className="sm:col-span-12 mt-2 pt-3 border-t border-slate-100 grid gap-2 sm:grid-cols-12 items-end">
+        <div className="sm:col-span-3">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">
+            Original price ($)
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={row.original_price_cents != null ? (row.original_price_cents / 100).toFixed(2) : ""}
+            onChange={(e) =>
+              onUpdate({
+                original_price_cents: e.target.value
+                  ? Math.round(parseFloat(e.target.value) * 100)
+                  : null,
+              })
+            }
+            placeholder="e.g. 5.50"
+          />
+        </div>
+        <div className="sm:col-span-3">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">
+            Discount type
+          </label>
+          <select
+            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+            value={row.discount_type ?? ""}
+            onChange={(e) =>
+              onUpdate({
+                discount_type: (e.target.value || null) as "percent" | "amount" | null,
+              })
+            }
+          >
+            <option value="">None</option>
+            <option value="percent">Percent (%)</option>
+            <option value="amount">Fixed ($)</option>
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500">Value</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            disabled={!row.discount_type}
+            value={row.discount_value ?? ""}
+            onChange={(e) =>
+              onUpdate({
+                discount_value: e.target.value ? parseFloat(e.target.value) : null,
+              })
+            }
+            placeholder={row.discount_type === "percent" ? "20" : "1.50"}
+          />
+        </div>
+        <div className="sm:col-span-4 text-xs text-slate-600">
+          {(() => {
+            const preview = computeDiscountedPrice({
+              original_price_cents: row.original_price_cents,
+              discount_type: row.discount_type,
+              discount_value: row.discount_value,
+            });
+            if (!preview.priceStr) return <span className="text-slate-400">No discount</span>;
+            return (
+              <span>
+                Customer sees:{" "}
+                <span className="font-semibold text-pink-600">{preview.priceStr}</span>
+                {row.original_price_cents != null && (
+                  <span className="ml-1 text-slate-400 line-through">
+                    {formatCentsShort(row.original_price_cents)}
+                  </span>
+                )}
+              </span>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );

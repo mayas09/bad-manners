@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { formatCents } from "@/lib/price-utils";
+import { formatCents, parsePriceToCents } from "@/lib/price-utils";
 import { formatInSiteTime } from "@/lib/time-utils";
+import { useCart } from "@/lib/cart-context";
+import { Heart, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/account/")({
   component: AccountHome,
@@ -35,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
 function AccountHome() {
   const auth = useCustomerAuth();
   const nav = useNavigate();
+  const cart = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [first, setFirst] = useState("");
@@ -42,6 +45,9 @@ function AccountHome() {
   const [phone, setPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [loyaltyMilestone, setLoyaltyMilestone] = useState(5);
+  const [favorites, setFavorites] = useState<
+    { id: string; menu_item_id: string; name: string; price: string | null; image_url: string | null }[]
+  >([]);
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });
@@ -102,6 +108,31 @@ function AccountHome() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);
+
+  useEffect(() => {
+    if (!auth.user) return;
+    const uid = auth.user.id;
+    (async () => {
+      const { data } = await supabase
+        .from("favorites")
+        .select("id, menu_item_id, menu_items(name, price, image_url)")
+        .eq("customer_id", uid);
+      setFavorites(
+        ((data as any[]) ?? []).map((r) => ({
+          id: r.id,
+          menu_item_id: r.menu_item_id,
+          name: r.menu_items?.name ?? "Item",
+          price: r.menu_items?.price ?? null,
+          image_url: r.menu_items?.image_url ?? null,
+        })),
+      );
+    })();
+  }, [auth.user]);
+
+  async function removeFavorite(favId: string) {
+    setFavorites((f) => f.filter((x) => x.id !== favId));
+    await supabase.from("favorites").delete().eq("id", favId);
+  }
 
   async function saveProfile() {
     if (!auth.user) return;
@@ -225,6 +256,68 @@ function AccountHome() {
             </div>
           )}
         </section>
+
+        <section>
+          <h2 className="font-display text-3xl flex items-center gap-2">
+            <Heart className="size-6 text-[--pink-deep] fill-[--pink-deep]" /> My Favorites
+          </h2>
+          {favorites.length === 0 ? (
+            <p className="mt-4 text-muted-foreground">
+              Tap the heart on any menu item to save it here.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {favorites.map((f) => {
+                const cents = parsePriceToCents(f.price);
+                return (
+                  <div
+                    key={f.id}
+                    className="glass rounded-xl p-3 flex items-center gap-3"
+                  >
+                    <div className="size-16 shrink-0 rounded-lg overflow-hidden bg-[--pink-deep]/10">
+                      {f.image_url && (
+                        <img src={f.image_url} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-lg truncate">{f.name}</p>
+                      {f.price && (
+                        <p className="text-sm text-fire font-semibold">{f.price}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {cents ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            cart.add({
+                              id: `menu:${f.menu_item_id}`,
+                              name: f.name,
+                              unit_price_cents: cents,
+                            });
+                            toast.success(`${f.name} added`);
+                          }}
+                          className="bg-fire text-white h-8 text-xs"
+                        >
+                          <Plus className="size-3.5 mr-1" /> Add
+                        </Button>
+                      ) : null}
+                      <button
+                        onClick={() => removeFavorite(f.id)}
+                        aria-label="Remove favorite"
+                        className="text-xs text-slate-500 hover:text-[--pink-deep]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+
 
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Loyalty punch card</h2>

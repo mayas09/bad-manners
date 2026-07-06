@@ -5,6 +5,10 @@ export type MenuItem = {
   note?: string;
   is_sold_out?: boolean;
   image_url?: string | null;
+  /** Base/original price in cents, only present when a discount is applied. */
+  original_price_cents?: number | null;
+  discount_type?: "percent" | "amount" | null;
+  discount_value?: number | null;
 };
 export type MenuSection = {
   id: string;

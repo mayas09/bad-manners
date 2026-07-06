@@ -91,6 +91,9 @@ export function useSiteContent(): SiteContent {
             note: r.note ?? undefined,
             is_sold_out: !!r.is_sold_out,
             image_url: r.image_url ?? null,
+            original_price_cents: r.original_price_cents ?? null,
+            discount_type: r.discount_type ?? null,
+            discount_value: r.discount_value ?? null,
           });
         });
         menu = Object.values(byId).filter((s) => s.items.length > 0);

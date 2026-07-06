@@ -21,6 +21,7 @@ import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AccountSignupRouteImport } from './routes/account.signup'
 import { Route as AccountResetPasswordRouteImport } from './routes/account.reset-password'
 import { Route as AccountLoginRouteImport } from './routes/account.login'
@@ -87,6 +88,11 @@ const AdminEventsRoute = AdminEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AccountSignupRoute = AccountSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/signup': typeof AccountSignupRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/analytics'
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/analytics'
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/account/login'
     | '/account/reset-password'
     | '/account/signup'
+    | '/admin/analytics'
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
@@ -321,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/account/signup': {
       id: '/account/signup'
       path: '/signup'
@@ -381,6 +400,7 @@ const AccountRouteWithChildren =
   AccountRoute._addFileChildren(AccountRouteChildren)
 
 interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminEventsRoute: typeof AdminEventsRoute
   AdminInfoRoute: typeof AdminInfoRoute
   AdminMenuRoute: typeof AdminMenuRoute
@@ -390,6 +410,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminEventsRoute: AdminEventsRoute,
   AdminInfoRoute: AdminInfoRoute,
   AdminMenuRoute: AdminMenuRoute,

@@ -20,11 +20,21 @@ type Summary = {
 };
 
 function startOf(kind: "day" | "week" | "month") {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  if (kind === "week") d.setDate(d.getDate() - 7);
-  if (kind === "month") d.setDate(d.getDate() - 30);
-  return d.toISOString();
+  if (kind === "week") {
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek.toISOString();
+  }
+  if (kind === "month") {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    return startOfMonth.toISOString();
+  }
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay.toISOString();
 }
 
 function AnalyticsPage() {
@@ -39,10 +49,12 @@ function AnalyticsPage() {
         const weekISO = startOf("week");
         const monthISO = startOf("month");
 
-        const [ordersMonth, custWeek, custMonth, itemRows] = await Promise.all([
+        const [ordersMonth, revenueEvents, custWeek, custMonth, itemRows] = await Promise.all([
+          supabase.from("orders").select("id, created_at").gte("created_at", monthISO),
           supabase
-            .from("orders")
-            .select("id, total_cents, status, payment_status, created_at")
+            .from("analytics_events")
+            .select("created_at, value_cents")
+            .eq("event_type", "sale_completed")
             .gte("created_at", monthISO),
           supabase
             .from("profiles")
@@ -59,19 +71,14 @@ function AnalyticsPage() {
         ]);
 
         if (ordersMonth.error) throw ordersMonth.error;
+        if (revenueEvents.error) throw revenueEvents.error;
 
         const orders = ordersMonth.data ?? [];
         const sumRevenue = (since: string) =>
-          orders
-            .filter(
-              (o) =>
-                o.created_at >= since &&
-                o.payment_status === "paid" &&
-                o.status === "picked_up",
-            )
-            .reduce((s, o) => s + (o.total_cents ?? 0), 0);
-        const countOrders = (since: string) =>
-          orders.filter((o) => o.created_at >= since).length;
+          (revenueEvents.data ?? [])
+            .filter((e) => e.created_at >= since)
+            .reduce((s, e) => s + (e.value_cents ?? 0), 0);
+        const countOrders = (since: string) => orders.filter((o) => o.created_at >= since).length;
 
         const counts: Record<string, number> = {};
         for (const r of (itemRows.data as any[]) ?? []) {

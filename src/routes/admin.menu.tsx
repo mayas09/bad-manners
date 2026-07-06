@@ -48,7 +48,39 @@ type MenuRow = {
   is_sold_out: boolean;
   sort_order: number;
   image_url: string | null;
+  original_price_cents: number | null;
+  discount_type: "percent" | "amount" | null;
+  discount_value: number | null;
 };
+
+function parsePriceInput(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const m = String(s).match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
+  if (!m) return null;
+  return Math.round(parseFloat(m[1]) * 100);
+}
+
+function formatCentsShort(c: number) {
+  return `$${(c / 100).toFixed(2)}`;
+}
+
+/** Compute customer-facing price string from original + discount. Returns null if no discount. */
+function computeDiscountedPrice(row: {
+  original_price_cents: number | null;
+  discount_type: "percent" | "amount" | null;
+  discount_value: number | null;
+}): { finalCents: number | null; priceStr: string | null } {
+  if (row.original_price_cents == null || !row.discount_type || row.discount_value == null) {
+    return { finalCents: null, priceStr: null };
+  }
+  let finalCents = row.original_price_cents;
+  if (row.discount_type === "percent") {
+    finalCents = Math.round(row.original_price_cents * (1 - row.discount_value / 100));
+  } else {
+    finalCents = Math.max(0, row.original_price_cents - Math.round(row.discount_value * 100));
+  }
+  return { finalCents, priceStr: formatCentsShort(finalCents) };
+}
 
 function MenuPage() {
   const [rows, setRows] = useState<MenuRow[]>([]);

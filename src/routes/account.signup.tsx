@@ -24,6 +24,7 @@ function SignupPage() {
   const search = useSearch({ from: "/account/signup" });
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState<Errors>({});
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,10 +58,14 @@ function SignupPage() {
         setErrs({ email: error.message });
         return;
       }
-      // The DB trigger auto-creates the profile row; nothing else to do here.
+      // If the project requires email confirmation, `session` will be null.
+      if (!data.session) {
+        setPendingEmail(email);
+        toast.success("Please check your email to confirm your account 🖤");
+        return;
+      }
       toast.success("Account created!");
       nav({ to: (search.next as any) || "/account" });
-      void data;
     } finally {
       setBusy(false);
     }

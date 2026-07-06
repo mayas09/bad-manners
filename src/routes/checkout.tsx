@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
@@ -25,6 +25,8 @@ import {
 export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
+
+const STRIPE_DRAFT_KEY = "bm_stripe_checkout_draft_v1";
 
 /** Generate 15-minute pickup slots between now+15min and shop close today. */
 function generatePickupSlots(hoursStr: string): { value: string; label: string }[] {
@@ -64,6 +66,7 @@ function generatePickupSlots(hoursStr: string): { value: string; label: string }
 
 function CheckoutPage() {
   const cart = useCart();
+  const search = useSearch({ from: "/checkout" }) as { cancelled?: string };
   const auth = useCustomerAuth();
   const nav = useNavigate();
   const content = useSiteContent();
@@ -75,6 +78,7 @@ function CheckoutPage() {
   const [pickup, setPickup] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "pickup">("stripe");
   const [redeemFreeDrink, setRedeemFreeDrink] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const freeDrinksAvailable = auth.profile?.free_drinks_available ?? 0;
 
@@ -88,9 +92,28 @@ function CheckoutPage() {
   const discountedTotalCents = Math.max(0, cart.subtotalCents - discountCents);
 
   useEffect(() => {
-    if (!auth.loading && !auth.user)
-      nav({ to: "/account/login", search: { next: "/checkout" } as any });
-  }, [auth.loading, auth.user, nav]);
+    if (!auth.loading && !auth.user) nav({ to: "/account/login", search: { next: "/checkout" } });
+    if (!auth.loading && auth.role === "admin") nav({ to: "/admin" });
+  }, [auth.loading, auth.user, auth.role, nav]);
+
+  useEffect(() => {
+    if (search.cancelled !== "1") return;
+    setPaymentError("Payment was not completed. Please try again.");
+    try {
+      const raw = sessionStorage.getItem(STRIPE_DRAFT_KEY);
+      if (!raw || cart.items.length > 0) return;
+      const draft = JSON.parse(raw);
+      if (Array.isArray(draft.items)) {
+        draft.items.forEach((it: Parameters<typeof cart.add>[0]) => cart.add(it));
+      }
+      if (typeof draft.customerName === "string") setName(draft.customerName);
+      if (typeof draft.customerPhone === "string") setPhone(draft.customerPhone);
+      if (typeof draft.orderNotes === "string") setNotes(draft.orderNotes);
+      if (typeof draft.pickupTime === "string") setPickup(draft.pickupTime);
+    } catch {
+      /* corrupted Stripe draft; leave the current cart alone */
+    }
+  }, [search.cancelled, cart]);
 
   useEffect(() => {
     if (auth.profile) {
@@ -124,6 +147,68 @@ function CheckoutPage() {
       const subtotal = cart.subtotalCents;
       const redeeming = discountCents > 0;
       const total = discountedTotalCents;
+      const orderItems = cart.items.flatMap((it) => {
+        const menu_item_id = it.id.startsWith("menu:") ? it.id.slice(5) : null;
+        if (redeeming && cheapestItem && it.id === cheapestItem.id) {
+          const rows = [];
+          if (it.quantity > 1) {
+            rows.push({
+              menu_item_id,
+              id: it.id,
+              name: it.name,
+              quantity: it.quantity - 1,
+              unit_price_cents: it.unit_price_cents,
+              special_notes: it.special_notes || null,
+            });
+          }
+          rows.push({
+            menu_item_id,
+            id: it.id,
+            name: it.name,
+            quantity: 1,
+            unit_price_cents: 0,
+            special_notes: it.special_notes || null,
+          });
+          return rows;
+        }
+        return [
+          {
+            menu_item_id,
+            id: it.id,
+            name: it.name,
+            quantity: it.quantity,
+            unit_price_cents: it.unit_price_cents,
+            special_notes: it.special_notes || null,
+          },
+        ];
+      });
+
+      if (paymentMethod === "stripe") {
+        const orderId = crypto.randomUUID();
+        const draft = {
+          orderId,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          customerEmail: auth.user.email,
+          subtotalCents: subtotal,
+          totalCents: total,
+          discountCents,
+          pickupTime: pickup,
+          orderNotes: notes || null,
+          items: cart.items.map((it) => ({ ...it, special_notes: it.special_notes || null })),
+        };
+        sessionStorage.setItem(STRIPE_DRAFT_KEY, JSON.stringify(draft));
+        const res = await createSession({
+          data: { ...draft, originUrl: window.location.origin },
+        });
+        if (res?.url) {
+          window.location.href = res.url;
+        } else {
+          toast.error("Could not start payment");
+        }
+        return;
+      }
+
       const { data: order, error } = await supabase
         .from("orders")
         .insert({
@@ -145,43 +230,9 @@ function CheckoutPage() {
         return;
       }
 
-      const orderItems = cart.items.flatMap((it) => {
-        const menu_item_id = it.id.startsWith("menu:") ? it.id.slice(5) : null;
-        if (redeeming && cheapestItem && it.id === cheapestItem.id) {
-          const rows = [];
-          if (it.quantity > 1) {
-            rows.push({
-              order_id: order.id,
-              menu_item_id,
-              name: it.name,
-              quantity: it.quantity - 1,
-              unit_price_cents: it.unit_price_cents,
-              special_notes: it.special_notes || null,
-            });
-          }
-          rows.push({
-            order_id: order.id,
-            menu_item_id,
-            name: it.name,
-            quantity: 1,
-            unit_price_cents: 0,
-            special_notes: it.special_notes || null,
-          });
-          return rows;
-        }
-        return [
-          {
-            order_id: order.id,
-            menu_item_id,
-            name: it.name,
-            quantity: it.quantity,
-            unit_price_cents: it.unit_price_cents,
-            special_notes: it.special_notes || null,
-          },
-        ];
-      });
-
-      const { error: iErr } = await supabase.from("order_items").insert(orderItems);
+      const { error: iErr } = await supabase
+        .from("order_items")
+        .insert(orderItems.map(({ id, ...it }) => ({ ...it, order_id: order.id })));
       if (iErr) {
         toast.error(iErr.message);
         return;
@@ -194,30 +245,17 @@ function CheckoutPage() {
           .eq("id", auth.user.id);
         if (redeemErr) console.error("Failed to redeem free drink:", redeemErr.message);
       }
-      
-      if (paymentMethod === "pickup") {
-        cart.clear();
-        nav({ to: "/order/$orderId", params: { orderId: order.id } });
-        return;
-      }
 
-      const res = await createSession({
-        data: { orderId: order.id, originUrl: window.location.origin },
-      });
-      if (res?.url) {
-        cart.clear();
-        window.location.href = res.url;
-      } else {
-        toast.error("Could not start payment");
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Something went wrong");
+      cart.clear();
+      nav({ to: "/order/$orderId", params: { orderId: order.id } });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setBusy(false);
     }
   }
 
-  if (auth.loading || !auth.user)
+  if (auth.loading || !auth.user || auth.role === "admin")
     return <div className="min-h-screen grid place-items-center">Loading…</div>;
 
   return (
@@ -244,6 +282,11 @@ function CheckoutPage() {
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-900">
                 <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
                 Stripe TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC
+              </div>
+            )}
+            {paymentError && (
+              <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {paymentError}
               </div>
             )}
           </div>

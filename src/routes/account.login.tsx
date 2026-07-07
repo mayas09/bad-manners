@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useCustomerAuth } from "@/lib/use-customer-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { claimAdminIfEligible } from "@/lib/admin-bootstrap.functions";
 import { Input } from "@/components/ui/input";
@@ -32,12 +33,33 @@ async function resolveRedirect(userId: string): Promise<string> {
 function LoginPage() {
   const nav = useNavigate();
   const search = useSearch({ from: "/account/login" });
+  const auth = useCustomerAuth();
   const claim = useServerFn(claimAdminIfEligible);
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [passErr, setPassErr] = useState<string | null>(null);
   const [needsConfirm, setNeedsConfirm] = useState<string | null>(null);
+  const navigatingRef = useRef(false);
+
+  const navigateAfterLogin = useCallback(
+    async (userId: string, email: string | null) => {
+      if (navigatingRef.current) return;
+      navigatingRef.current = true;
+      await claim({ data: { userId, email: email ?? "" } }).catch(() => {});
+      const roleDest = await resolveRedirect(userId);
+      const requestedDest = search.next as string | undefined;
+      const dest =
+        roleDest === "/admin" ? "/admin" : requestedDest === "/checkout" ? "/checkout" : roleDest;
+      nav({ to: dest });
+    },
+    [claim, nav, search.next],
+  );
+
+  useEffect(() => {
+    if (auth.loading || !auth.user) return;
+    void navigateAfterLogin(auth.user.id, auth.user.email);
+  }, [auth.loading, auth.user, navigateAfterLogin]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,15 +101,10 @@ function LoginPage() {
         return;
       }
       if (data.user) {
-        await claim({ data: { userId: data.user.id, email: data.user.email ?? email } }).catch(
-          () => {},
-        );
-        const roleDest = await resolveRedirect(data.user.id);
-        const requestedDest = search.next as string | undefined;
-        const dest =
-          roleDest === "/admin" ? "/admin" : requestedDest === "/checkout" ? "/checkout" : roleDest;
+        await supabase.auth.getSession();
+        await auth.refresh();
         toast.success("Welcome back!");
-        nav({ to: dest });
+        await navigateAfterLogin(data.user.id, data.user.email ?? email);
       }
     } finally {
       setBusy(false);
@@ -102,10 +119,15 @@ function LoginPage() {
   }
 
   async function google() {
+    const next = search.next ? `?next=${encodeURIComponent(search.next as string)}` : "";
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/account/login${next}`,
     });
-    if (result.error) toast.error("Google sign-in failed");
+    if (result.error) {
+      toast.error("Google sign-in failed");
+      return;
+    }
+    await auth.refresh();
   }
 
   return (

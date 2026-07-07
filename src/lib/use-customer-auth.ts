@@ -1,4 +1,13 @@
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Profile = {
@@ -18,7 +27,9 @@ export type CustomerAuth = {
   refresh: () => Promise<void>;
 };
 
-export function useCustomerAuth(): CustomerAuth {
+const CustomerAuthContext = createContext<CustomerAuth | null>(null);
+
+export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<CustomerAuth, "refresh">>({
     loading: true,
     user: null,
@@ -27,13 +38,16 @@ export function useCustomerAuth(): CustomerAuth {
     isAdmin: false,
   });
 
-  async function load() {
+  const load = useCallback(async () => {
     let u: { id: string; email: string | null } | null = null;
     try {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const sessionUser = session?.user ?? null;
+      if (!sessionUser)
         return setState({ loading: false, user: null, profile: null, role: null, isAdmin: false });
-      u = { id: data.user.id, email: data.user.email ?? null };
+      u = { id: sessionUser.id, email: sessionUser.email ?? null };
     } catch (err) {
       console.error("Failed to load auth user", err);
       return setState({ loading: false, user: null, profile: null, role: null, isAdmin: false });
@@ -70,7 +84,7 @@ export function useCustomerAuth(): CustomerAuth {
         .eq("role", "admin")
         .maybeSingle();
       const isAdmin = !!adminRole;
-      
+
       setState({
         loading: false,
         user: u,
@@ -100,15 +114,37 @@ export function useCustomerAuth(): CustomerAuth {
         isAdmin: false,
       });
     }
-  }
-
-  useEffect(() => {
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") load();
-    });
-    return () => sub.subscription.unsubscribe();
   }, []);
 
-  return { ...state, refresh: load };
+  useEffect(() => {
+    let active = true;
+    void load();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (!active) return;
+      if (
+        event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "USER_UPDATED"
+      ) {
+        void load();
+      }
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [load]);
+
+  const value = useMemo(() => ({ ...state, refresh: load }), [state, load]);
+
+  return createElement(CustomerAuthContext.Provider, { value }, children);
+}
+
+export function useCustomerAuth(): CustomerAuth {
+  const auth = useContext(CustomerAuthContext);
+  if (auth) return auth;
+
+  throw new Error("useCustomerAuth must be used inside CustomerAuthProvider");
 }

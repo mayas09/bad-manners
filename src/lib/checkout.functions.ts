@@ -74,6 +74,21 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   });
 
 const FinalizeSchema = CreateSchema.omit({ originUrl: true }).extend({ sessionId: z.string() });
+const CancelOrderSchema = z.object({
+  orderId: z.string().uuid(),
+  reason: z.string().trim().min(3).max(500),
+});
+
+function toOrderItems(items: z.infer<typeof CreateSchema>["items"], orderId: string) {
+  return items.map((it) => ({
+    order_id: orderId,
+    menu_item_id: it.id.startsWith("menu:") ? it.id.slice(5) : null,
+    name: it.name,
+    quantity: it.quantity,
+    unit_price_cents: it.unit_price_cents,
+    special_notes: it.special_notes || null,
+  }));
+}
 
 export const finalizeOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -130,17 +145,92 @@ export const finalizeOrder = createServerFn({ method: "POST" })
       if (orderErr || !order)
         throw new Error(`Failed to record payment: ${orderErr?.message ?? "unknown error"}`);
 
-      const orderItems = data.items.map((it) => ({
-        order_id: order.id,
-        menu_item_id: it.id.startsWith("menu:") ? it.id.slice(5) : null,
-        name: it.name,
-        quantity: it.quantity,
-        unit_price_cents: it.unit_price_cents,
-        special_notes: it.special_notes || null,
-      }));
+     const { error: deleteErr } = await supabaseAdmin
+        .from("order_items")
+        .delete()
+        .eq("order_id", order.id);
+      if (deleteErr) throw new Error(`Failed to reset order items: ${deleteErr.message}`);
+
+      const orderItems = toOrderItems(data.items, order.id);
       const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(orderItems);
       if (itemsErr) throw new Error(`Failed to record order items: ${itemsErr.message}`);
       return { paid: true };
     }
     return { paid: false };
+  });
+
+export const cancelOrderWithRefund = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => CancelOrderSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!role) throw new Error("Unauthorized");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from("orders")
+      .select(
+        "id, customer_id, order_number, status, payment_status, total_cents, stripe_payment_intent",
+      )
+      .eq("id", data.orderId)
+      .single();
+    if (orderErr || !order) throw new Error("Order not found");
+    if (order.status === "cancelled") return { cancelled: true, refunded: false };
+    if (order.status === "picked_up") throw new Error("Picked up orders cannot be cancelled");
+
+    let refundId: string | null = null;
+    const update: {
+      status: "cancelled";
+      payment_status?: "refunded";
+      cancellation_reason: string;
+      cancelled_by: string;
+      stripe_refund_id?: string | null;
+    } = {
+      status: "cancelled",
+      cancellation_reason: data.reason,
+      cancelled_by: userId,
+    };
+
+    if (order.payment_status === "paid") {
+      if (!order.stripe_payment_intent) {
+        throw new Error("Cannot refund paid order because the Stripe payment is missing");
+      }
+      const Stripe = (await import("stripe")).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: order.stripe_payment_intent,
+          reason: "requested_by_customer",
+          metadata: {
+            order_id: order.id,
+            order_number: String(order.order_number),
+            cancelled_by: userId,
+            cancellation_reason: data.reason,
+          },
+        },
+        { idempotencyKey: `order-cancel-refund-${order.id}` },
+      );
+      refundId = refund.id;
+      update.payment_status = "refunded";
+      update.stripe_refund_id = refund.id;
+    }
+
+    const { error: updateErr } = await supabaseAdmin.from("orders").update(update).eq("id", order.id);
+    if (updateErr) throw new Error(`Failed to cancel order: ${updateErr.message}`);
+
+    const refundCopy = refundId ? " A full refund has been issued to your original payment method." : "";
+    const { error: notifyErr } = await supabaseAdmin.from("notifications").insert({
+      customer_id: order.customer_id,
+      order_id: order.id,
+      message: `Your order #${order.order_number} was cancelled. Reason: ${data.reason}.${refundCopy}`,
+    });
+    if (notifyErr) throw new Error(`Order cancelled, but notification failed: ${notifyErr.message}`);
+
+    return { cancelled: true, refunded: !!refundId };
   });

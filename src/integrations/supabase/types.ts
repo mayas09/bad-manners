@@ -415,6 +415,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_by: string | null
           created_at: string
           customer_email: string | null
           customer_id: string
@@ -428,12 +430,15 @@ export type Database = {
           pickup_time: string
           status: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent: string | null
+          stripe_refund_id: string | null
           stripe_session_id: string | null
           subtotal_cents: number
           total_cents: number
           updated_at: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_id: string
@@ -447,12 +452,15 @@ export type Database = {
           pickup_time: string
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent?: string | null
+          stripe_refund_id?: string | null
           stripe_session_id?: string | null
           subtotal_cents?: number
           total_cents?: number
           updated_at?: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_id?: string
@@ -466,6 +474,7 @@ export type Database = {
           pickup_time?: string
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent?: string | null
+          stripe_refund_id?: string | null
           stripe_session_id?: string | null
           subtotal_cents?: number
           total_cents?: number

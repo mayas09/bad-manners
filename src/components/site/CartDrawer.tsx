@@ -27,9 +27,10 @@ export function CartDrawer() {
   if (!cart.isOpen) return null;
 
   const handleCheckout = () => {
+    if (auth.loading) return;
     cart.setOpen(false);
     if (!auth.user) {
-      navigate({ to: "/account/login", search: { next: "/checkout" } as any });
+      navigate({ to: "/account/login", search: { next: "/checkout" } });
     } else {
       navigate({ to: "/checkout" });
     }
@@ -102,7 +103,7 @@ export function CartDrawer() {
             <span className="text-fire">{formatCents(cart.subtotalCents)}</span>
           </div>
           <Button
-            disabled={cart.items.length === 0}
+            disabled={cart.items.length === 0 || auth.loading}
             onClick={handleCheckout}
             className="w-full h-12 bg-fire text-white text-base"
           >

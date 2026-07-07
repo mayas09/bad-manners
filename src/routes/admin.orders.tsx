@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { cancelOrderWithRefund } from "@/lib/checkout.functions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ShoppingBag, Volume2, VolumeX } from "lucide-react";
@@ -70,6 +72,8 @@ function OrdersPage() {
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, Item[]>>({});
   const [soundOn, setSoundOn] = useState(true);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const cancelOrder = useServerFn(cancelOrderWithRefund);
   const soundOnRef = useRef(true);
   const knownIdsRef = useRef<Set<string>>(new Set());
 
@@ -169,6 +173,28 @@ function OrdersPage() {
     }
   }
 
+  async function cancel(o: Order) {
+    const reason = window.prompt(`Cancellation reason for order #${o.order_number}`);
+    if (!reason) return;
+    const trimmed = reason.trim();
+    if (trimmed.length < 3) return toast.error("Cancellation reason is required");
+
+    setCancellingId(o.id);
+    try {
+      const result = await cancelOrder({ data: { orderId: o.id, reason: trimmed } });
+      toast.success(
+        result?.refunded
+          ? `Order #${o.order_number} cancelled and refunded`
+          : `Order #${o.order_number} cancelled`,
+      );
+      await load();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel order");
+    } finally {
+      setCancellingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -259,6 +285,16 @@ function OrdersPage() {
                           onClick={() => advance(o)}
                         >
                           {advancingId === o.id ? "…" : `Mark ${next.replace("_", " ")}`}
+                        </Button>
+                      )}
+                      {o.status !== "cancelled" && o.status !== "picked_up" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={cancellingId === o.id}
+                          onClick={() => cancel(o)}
+                        >
+                          {cancellingId === o.id ? "…" : "Cancel"}
                         </Button>
                       )}
                     </div>

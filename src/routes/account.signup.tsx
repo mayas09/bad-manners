@@ -19,6 +19,10 @@ export const Route = createFileRoute("/account/signup")({
 
 type Errors = Partial<Record<"first" | "last" | "email" | "password" | "confirm", string>>;
 
+function resolveSignupDestination(next: string | undefined) {
+  return next === "/checkout" ? "/checkout" : "/account";
+}
+
 function SignupPage() {
   const nav = useNavigate();
   const search = useSearch({ from: "/account/signup" });
@@ -65,15 +69,16 @@ function SignupPage() {
         return;
       }
       toast.success("Account created!");
-      nav({ to: (search.next as any) || "/account" });
+      nav({ to: resolveSignupDestination(search.next) });
     } finally {
       setBusy(false);
     }
   }
 
   async function google() {
+    const next = search.next ? `?next=${encodeURIComponent(search.next as string)}` : "";
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/account/login${next}`,
     });
     if (result.error) toast.error("Google sign-in failed");
   }
@@ -125,13 +130,11 @@ function SignupPage() {
         Order ahead. Skip the line. Get more coffee.
       </p>
 
-
       <div className="mt-6">
         <GoogleButton onClick={google} />
       </div>
       <div className="my-4 flex items-center gap-2 text-xs text-slate-500">
-        <div className="h-px flex-1 bg-slate-700" /> or{" "}
-        <div className="h-px flex-1 bg-slate-700" />
+        <div className="h-px flex-1 bg-slate-700" /> or <div className="h-px flex-1 bg-slate-700" />
       </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
@@ -192,7 +195,7 @@ function SignupPage() {
         Already have an account?{" "}
         <Link
           to="/account/login"
-          search={search as any}
+          search={search.next ? { next: search.next } : undefined}
           className="text-pink-400 font-medium hover:text-pink-300"
         >
           Sign in

@@ -428,6 +428,7 @@ export type Database = {
           order_number: number
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_time: string
+          refunded_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent: string | null
           stripe_refund_id: string | null
@@ -450,6 +451,7 @@ export type Database = {
           order_number?: number
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_time: string
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent?: string | null
           stripe_refund_id?: string | null
@@ -472,6 +474,7 @@ export type Database = {
           order_number?: number
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_time?: string
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent?: string | null
           stripe_refund_id?: string | null
@@ -644,6 +647,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_paid_order: {
+        Args: {
+          p_customer_email: string | null
+          p_customer_id: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_discount_cents: number
+          p_items: Json
+          p_order_id: string
+          p_order_notes: string | null
+          p_pickup_time: string
+          p_stripe_payment_intent: string | null
+          p_stripe_session_id: string
+          p_subtotal_cents: number
+          p_total_cents: number
+        }
+        Returns: {
+          already_paid: boolean
+          id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

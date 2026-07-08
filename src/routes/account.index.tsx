@@ -63,7 +63,7 @@ function AccountHome() {
 
   useEffect(() => {
     if (!auth.loading && !auth.user) nav({ to: "/account/login" });
-  if (!auth.loading && auth.role === "admin") nav({ to: "/admin" });
+    if (!auth.loading && auth.role === "admin") nav({ to: "/admin" });
   }, [auth.loading, auth.user, auth.role, nav]);
 
   useEffect(() => {
@@ -101,10 +101,8 @@ function AccountHome() {
     }
     loadOrders();
 
-    // Keep the loyalty punch card and order list current when an admin
-    // changes an order's status (e.g. marking it picked_up), since that's
-    // when the loyalty_count trigger fires server-side.
-    const channel = supabase
+    // Keep the order list current when an admin changes an order's status.
+    const ordersChannel = supabase
       .channel(`account-orders-${uid}`)
       .on(
         "postgres_changes",
@@ -116,8 +114,23 @@ function AccountHome() {
       )
       .subscribe();
 
+    // The loyalty punch card is stored on profiles, not orders. Subscribe to
+    // the profile row directly so the UI updates when the picked_up trigger
+    // increments loyalty_count or awards a free drink.
+    const profileChannel = supabase
+      .channel(`account-profile-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${uid}` },
+        () => {
+          auth.refresh();
+        },
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(profileChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);

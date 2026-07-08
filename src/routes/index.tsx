@@ -500,7 +500,7 @@ function MenuSection({
               <TabsTrigger
                 key={s.id}
                 value={s.id}
-                className="rounded-full px-5 py-2 font-display text-base text-[color:var(--pink-deep)] transition-colors hover:bg-[color:var(--pink-deep)] hover:text-white data-[state=active]:bg-fire data-[state=active]:text-white data-[state=active]:shadow-lg"
+                className="rounded-full px-5 py-2 font-display text-base text-[color:var(--pink-deep)] transition-colors hover:bg-[color:var(--pink-deep)] hover:text-white data-[state=active]:bg-[color:var(--pink-deep)] data-[state=active]:text-white data-[state=active]:shadow-lg"
               >
                 {s.title}
               </TabsTrigger>

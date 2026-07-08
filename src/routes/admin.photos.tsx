@@ -17,6 +17,8 @@ type ImgRow = {
   storage_path: string | null;
   category: string;
   sort_order: number;
+  season_tag: string | null;
+  month_tag: number | null;
 };
 
 const IMAGE_SLOTS: { key: string; label: string; category: string }[] = [
@@ -29,6 +31,23 @@ const IMAGE_SLOTS: { key: string; label: string; category: string }[] = [
   { key: "gallery_4", label: "Gallery 4", category: "gallery" },
   { key: "gallery_5", label: "Gallery 5", category: "gallery" },
   { key: "gallery_6", label: "Gallery 6", category: "gallery" },
+];
+
+const SEASON_OPTIONS = ["", "spring", "summer", "fall", "winter"];
+const MONTH_OPTIONS = [
+  { value: "", label: "Any month" },
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
 ];
 
 function bucketForCategory(category: string) {
@@ -127,6 +146,8 @@ function PhotosPage() {
         url: signed.data.signedUrl,
         storage_path: path,
         category,
+        season_tag: existing?.season_tag ?? null,
+        month_tag: existing?.month_tag ?? null,
       };
       let resp;
       if (existing) {
@@ -175,6 +196,20 @@ function PhotosPage() {
     load();
   }
 
+  async function updateTheme(slotKey: string, seasonTag: string, monthTag: number | null) {
+    const { error } = await supabase
+      .from("site_images")
+      .update({ season_tag: seasonTag || null, month_tag: monthTag })
+      .eq("key", slotKey);
+    if (error) return toast.error(error.message);
+    setRows((current) =>
+      current.map((row) =>
+        row.key === slotKey ? { ...row, season_tag: seasonTag || null, month_tag: monthTag } : row,
+      ),
+    );
+    toast.success("Gallery theme saved");
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -196,6 +231,7 @@ function PhotosPage() {
               meta={meta[slot.key]}
               onUpload={(f) => upload(slot.key, f)}
               onClear={() => clearSlot(slot.key)}
+              onThemeChange={(seasonTag, monthTag) => updateTheme(slot.key, seasonTag, monthTag)}
             />
           );
         })}
@@ -211,6 +247,7 @@ function PhotoSlot({
   meta,
   onUpload,
   onClear,
+  onThemeChange,
 }: {
   label: string;
   row: ImgRow | undefined;
@@ -218,6 +255,7 @@ function PhotoSlot({
   meta?: { width: number; height: number; size: number };
   onUpload: (f: File) => void;
   onClear: () => void;
+  onThemeChange: (seasonTag: string, monthTag: number | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
@@ -261,6 +299,40 @@ function PhotoSlot({
         <p className="mt-2 text-[11px] text-slate-500">
           {meta.width}×{meta.height} · {formatBytes(meta.size)}
         </p>
+      )}
+      {row && row.category === "gallery" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Season
+            <select
+              value={row.season_tag ?? ""}
+              onChange={(e) => onThemeChange(e.target.value, row.month_tag)}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800"
+            >
+              {SEASON_OPTIONS.map((season) => (
+                <option key={season || "default"} value={season}>
+                  {season ? season[0].toUpperCase() + season.slice(1) : "Default"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Month
+            <select
+              value={row.month_tag?.toString() ?? ""}
+              onChange={(e) =>
+                onThemeChange(row.season_tag ?? "", e.target.value ? Number(e.target.value) : null)
+              }
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800"
+            >
+              {MONTH_OPTIONS.map((month) => (
+                <option key={month.value || "any"} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       )}
       <div className="mt-3 flex gap-2">
         <input

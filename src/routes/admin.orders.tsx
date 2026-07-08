@@ -56,6 +56,7 @@ const PAYMENT_BADGE: Record<string, { label: string; className: string }> = {
   paid: { label: "Paid", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
   pay_on_pickup: { label: "Pay on Pickup", className: "bg-amber-100 text-amber-800 border-amber-300" },
   unpaid: { label: "Unpaid", className: "bg-red-100 text-red-700 border-red-300" },
+  refunded: { label: "Refunded", className: "bg-purple-100 text-purple-700 border-purple-300" },
 };
 
 function paymentBadge(status: string) {

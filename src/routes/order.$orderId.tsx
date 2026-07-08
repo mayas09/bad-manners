@@ -37,9 +37,31 @@ function OrderPage() {
   const cart = useCart();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentFinalizing, setPaymentFinalizing] = useState(!!session_id);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadOrder() {
+      const { data: o } = await supabase
+        .from("orders")
+        .select("id,order_number,status,payment_status,total_cents,pickup_time,customer_name")
+        .eq("id", orderId)
+        .maybeSingle();
+      const { data: items } = await supabase
+        .from("order_items")
+        .select("name,quantity,unit_price_cents")
+        .eq("order_id", orderId);
+      if (!cancelled && o) setOrder({ ...(o as OrderRow), items: items ?? [] });
+      return !!o;
+    }
+
     (async () => {
+      setLoading(true);
+      setPaymentError(null);
+      setPaymentFinalizing(!!session_id);
+
       if (session_id) {
         try {
           const raw = sessionStorage.getItem(STRIPE_DRAFT_KEY);
@@ -52,28 +74,52 @@ function OrderPage() {
           }
         } catch (e) {
           console.error("Order payment verification failed", e);
+          if (!cancelled) {
+            setPaymentError(e instanceof Error ? e.message : "Payment verification failed");
+          }
         }
       }
-      const { data: o } = await supabase
-        .from("orders")
-        .select("id,order_number,status,payment_status,total_cents,pickup_time,customer_name")
-        .eq("id", orderId)
-        .maybeSingle();
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("name,quantity,unit_price_cents")
-        .eq("order_id", orderId);
-      if (o) setOrder({ ...(o as OrderRow), items: items ?? [] });
-      setLoading(false);
+      await loadOrder();
+      if (!cancelled) {
+        setPaymentFinalizing(false);
+        setLoading(false);
+      }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [orderId, session_id, finalize, cart]);
 
-  if (loading) return <div className="min-h-screen grid place-items-center">Loading…</div>;
+  if (loading || paymentFinalizing) {
+    return (
+      <div className="min-h-screen grid place-items-center px-4">
+        <div className="text-center">
+          <Clock className="mx-auto size-12 text-amber-500" />
+          <h1 className="mt-4 font-display text-3xl">
+            {session_id ? "Recording your payment…" : "Loading…"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {session_id
+              ? "Keep this page open while we confirm your order."
+              : "Getting your order details."}
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (!order)
     return (
       <div className="min-h-screen grid place-items-center px-4">
         <div className="text-center">
-          <h1 className="font-display text-3xl">Order not found</h1>
+          <h1 className="font-display text-3xl">
+            {paymentError ? "Payment needs attention" : "Order not found"}
+          </h1>
+          {paymentError && (
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              {paymentError}. If your card was charged, contact the shop and include this order ID.
+            </p>
+          )}
           <Link to="/" className="text-fire underline mt-4 inline-block">
             Back to site
           </Link>

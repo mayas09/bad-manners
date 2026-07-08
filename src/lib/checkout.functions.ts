@@ -119,41 +119,26 @@ export const finalizeOrder = createServerFn({ method: "POST" })
       throw new Error("Paid amount does not match order total");
     if (session.payment_status === "paid") {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: order, error: orderErr } = await supabaseAdmin
-        .from("orders")
-        .upsert({
-          id: data.orderId,
-          customer_id: userId,
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone,
-          customer_email: data.customerEmail ?? null,
-          subtotal_cents: data.subtotalCents,
-          total_cents: data.totalCents,
-          discount_cents: data.discountCents,
-          pickup_time: data.pickupTime,
-          order_notes: data.orderNotes || null,
-          payment_status: "paid",
-          status: "confirmed",
-          stripe_session_id: data.sessionId,
-          stripe_payment_intent:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : (session.payment_intent?.id ?? null),
-        })
-        .select("id")
-        .single();
-      if (orderErr || !order)
-        throw new Error(`Failed to record payment: ${orderErr?.message ?? "unknown error"}`);
-
-     const { error: deleteErr } = await supabaseAdmin
-        .from("order_items")
-        .delete()
-        .eq("order_id", order.id);
-      if (deleteErr) throw new Error(`Failed to reset order items: ${deleteErr.message}`);
-
-      const orderItems = toOrderItems(data.items, order.id);
-      const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(orderItems);
-      if (itemsErr) throw new Error(`Failed to record order items: ${itemsErr.message}`);
+      const orderItems = toOrderItems(data.items, data.orderId);
+      const { error: rpcErr } = await supabaseAdmin.rpc("finalize_paid_order", {
+        p_order_id: data.orderId,
+        p_customer_id: userId,
+        p_customer_name: data.customerName,
+        p_customer_phone: data.customerPhone,
+        p_customer_email: data.customerEmail ?? null,
+        p_subtotal_cents: data.subtotalCents,
+        p_total_cents: data.totalCents,
+        p_discount_cents: data.discountCents,
+        p_pickup_time: data.pickupTime,
+        p_order_notes: data.orderNotes || null,
+        p_stripe_session_id: data.sessionId,
+        p_stripe_payment_intent:
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : (session.payment_intent?.id ?? null),
+        p_items: orderItems,
+      });
+      if (rpcErr) throw new Error(`Failed to record payment: ${rpcErr.message}`);
       return { paid: true };
     }
     return { paid: false };
@@ -191,6 +176,7 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
       cancellation_reason: string;
       cancelled_by: string;
       stripe_refund_id?: string | null;
+      refunded_at?: string;
     } = {
       status: "cancelled",
       cancellation_reason: data.reason,
@@ -219,6 +205,7 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
       refundId = refund.id;
       update.payment_status = "refunded";
       update.stripe_refund_id = refund.id;
+      update.refunded_at = new Date().toISOString();
     }
 
     const { error: updateErr } = await supabaseAdmin.from("orders").update(update).eq("id", order.id);

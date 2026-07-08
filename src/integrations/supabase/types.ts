@@ -596,6 +596,8 @@ export type Database = {
           category: string
           id: string
           key: string
+          month_tag: number | null
+          season_tag: string | null
           sort_order: number
           storage_path: string | null
           updated_at: string
@@ -605,6 +607,8 @@ export type Database = {
           category?: string
           id?: string
           key: string
+          month_tag?: number | null
+          season_tag?: string | null
           sort_order?: number
           storage_path?: string | null
           updated_at?: string
@@ -614,6 +618,8 @@ export type Database = {
           category?: string
           id?: string
           key?: string
+          month_tag?: number | null
+          season_tag?: string | null
           sort_order?: number
           storage_path?: string | null
           updated_at?: string

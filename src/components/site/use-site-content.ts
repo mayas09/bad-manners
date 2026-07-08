@@ -18,6 +18,15 @@ export type SiteContent = {
   loaded: boolean;
 };
 
+type SiteImageRow = {
+  category: string;
+  key: string;
+  month_tag?: number | null;
+  season_tag?: string | null;
+  sort_order: number;
+  url: string;
+};
+
 const SECTION_META: Record<
   string,
   { title: string; blurb?: string; footer?: MenuSection["footer"] }
@@ -48,6 +57,13 @@ const FALLBACK_HOURS = [
   { label: "Mon – Fri", hours_text: "8:00 AM – 3:00 PM" },
   { label: "Sat – Sun", hours_text: "8:30 AM – 3:00 PM" },
 ];
+
+function currentSeason(month: number) {
+  if (month === 12 || month <= 2) return "winter";
+  if (month <= 5) return "spring";
+  if (month <= 8) return "summer";
+  return "fall";
+}
 
 export function useSiteContent(): SiteContent {
   const [state, setState] = useState<SiteContent>({
@@ -113,11 +129,20 @@ export function useSiteContent(): SiteContent {
 
       // Images
       const photos = { ...FALLBACK_PHOTOS };
-      const galleryRows = (img.data ?? [])
-        .filter((r: any) => r.category === "gallery")
-        .sort((a: any, b: any) => a.sort_order - b.sort_order);
-      if (galleryRows.length) photos.gallery = galleryRows.map((r: any) => r.url);
-      (img.data ?? []).forEach((r: any) => {
+      const month = new Date().getMonth() + 1;
+      const season = currentSeason(month);
+      const imageRows = (img.data ?? []) as SiteImageRow[];
+      const allGalleryRows = imageRows
+        .filter((r) => r.category === "gallery")
+        .sort((a, b) => a.sort_order - b.sort_order);
+      const themedRows = allGalleryRows.filter((r) => {
+        const rowMonth = Number(r.month_tag);
+        return rowMonth === month || r.season_tag === season;
+      });
+      const defaultRows = allGalleryRows.filter((r) => !r.month_tag && !r.season_tag);
+      const galleryRows = themedRows.length >= 6 ? themedRows : defaultRows;
+      if (galleryRows.length) photos.gallery = galleryRows.map((r) => r.url);
+      imageRows.forEach((r) => {
         if (r.key === "hero_interior") photos.heroInterior = r.url;
         else if (r.key === "story") photos.story = r.url;
         else if (r.key === "community") photos.community = r.url;

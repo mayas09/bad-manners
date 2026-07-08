@@ -500,7 +500,7 @@ function MenuSection({
               <TabsTrigger
                 key={s.id}
                 value={s.id}
-                className="rounded-full px-5 py-2 font-display text-base data-[state=active]:bg-fire data-[state=active]:text-white data-[state=active]:shadow-lg"
+                className="rounded-full px-5 py-2 font-display text-base text-[color:var(--pink-deep)] transition-colors hover:bg-[color:var(--pink-deep)] hover:text-white data-[state=active]:bg-fire data-[state=active]:text-white data-[state=active]:shadow-lg"
               >
                 {s.title}
               </TabsTrigger>
@@ -519,9 +519,7 @@ function MenuSection({
                   const cents = parsePriceToCents(item.price);
                   const canOrder = !!cents && !item.is_sold_out;
                   const hasDiscount =
-                    !!item.original_price_cents &&
-                    !!cents &&
-                    item.original_price_cents > cents;
+                    !!item.original_price_cents && !!cents && item.original_price_cents > cents;
                   return (
                     <div
                       key={item.id ?? i}
@@ -606,7 +604,8 @@ function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
               src={src}
               alt={`Bad Manners Coffee gallery photo ${i + 1}`}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+              className="gallery-ken-burns h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+              style={{ animationDelay: `${i * -2.75}s` }}
             />
           </div>
         ))}

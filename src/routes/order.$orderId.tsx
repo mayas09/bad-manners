@@ -64,10 +64,7 @@ function OrderPage() {
 
       if (session_id) {
         try {
-          const raw = sessionStorage.getItem(STRIPE_DRAFT_KEY);
-          const draft = raw ? JSON.parse(raw) : null;
-          if (!draft || draft.orderId !== orderId) throw new Error("Missing checkout draft");
-          const result = await finalize({ data: { ...draft, sessionId: session_id } });
+          const result = await finalize({ data: { orderId, sessionId: session_id } });
           if (result?.paid) {
             cart.clear();
             sessionStorage.removeItem(STRIPE_DRAFT_KEY);

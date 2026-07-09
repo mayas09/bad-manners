@@ -26,16 +26,35 @@ const CreateSchema = z.object({
     .min(1),
 });
 
+// Stripe hard-caps metadata at 50 keys and 500 chars/value. `order_id`,
+// `order_data_chunks`, and `customer_id` (added by the caller) each take a
+// slot, so only 47 remain for the chunked order payload below.
 const METADATA_CHUNK_SIZE = 450;
 const METADATA_CHUNK_PREFIX = "order_data_";
+const METADATA_RESERVED_KEYS = 3;
+const METADATA_MAX_KEYS = 50;
+const METADATA_MAX_CHUNKS = METADATA_MAX_KEYS - METADATA_RESERVED_KEYS;
 const uuidSchema = z.string().uuid();
 
+// originUrl is only needed to build the success/cancel URLs at session
+// creation time and is never read back, so it's excluded from the payload
+// to leave more headroom under Stripe's metadata limits.
+const PackedOrderSchema = CreateSchema.omit({ originUrl: true });
+type PackedOrderData = z.infer<typeof PackedOrderSchema>;
+
 function packOrderMetadata(orderData: z.infer<typeof CreateSchema>) {
-  const json = JSON.stringify(orderData);
+  const { originUrl: _originUrl, ...packed } = orderData;
+  const json = JSON.stringify(packed);
   const metadata: Record<string, string> = {
     order_id: orderData.orderId,
   };
   const chunkCount = Math.ceil(json.length / METADATA_CHUNK_SIZE);
+  if (chunkCount > METADATA_MAX_CHUNKS) {
+    throw new Error(
+      "This order is too large to process online (too many items/notes). " +
+        "Please remove some items or split it into two orders.",
+    );
+  }
   for (let i = 0; i < chunkCount; i += 1) {
     metadata[`${METADATA_CHUNK_PREFIX}${i}`] = json.slice(
       i * METADATA_CHUNK_SIZE,
@@ -46,17 +65,29 @@ function packOrderMetadata(orderData: z.infer<typeof CreateSchema>) {
   return metadata;
 }
 
-function unpackOrderMetadata(metadata: Record<string, string> | null | undefined) {
+function unpackOrderMetadata(metadata: Record<string, string> | null | undefined): PackedOrderData {
   if (!metadata) throw new Error("Missing Stripe order metadata");
   const chunkCount = Number(metadata.order_data_chunks);
   if (!Number.isInteger(chunkCount) || chunkCount < 1) {
+    console.error("Incomplete Stripe order metadata for session", {
+      orderId: metadata.order_id ?? "(none)",
+      metadataKeys: Object.keys(metadata),
+      orderDataChunksValue: metadata.order_data_chunks ?? "(missing)",
+    });
     throw new Error("Incomplete Stripe order metadata");
   }
-  const json = Array.from(
-    { length: chunkCount },
-    (_, i) => metadata[`${METADATA_CHUNK_PREFIX}${i}`],
-  ).join("");
-  return CreateSchema.parse(JSON.parse(json));
+  const chunkKeys = Array.from({ length: chunkCount }, (_, i) => `${METADATA_CHUNK_PREFIX}${i}`);
+  const missingKeys = chunkKeys.filter((k) => metadata[k] === undefined);
+  if (missingKeys.length > 0) {
+    console.error("Stripe order metadata is missing expected chunk keys", {
+      orderId: metadata.order_id ?? "(none)",
+      metadataKeys: Object.keys(metadata),
+      missingKeys,
+    });
+    throw new Error("Incomplete Stripe order metadata");
+  }
+  const json = chunkKeys.map((k) => metadata[k]).join("");
+  return PackedOrderSchema.parse(JSON.parse(json));
 }
 
 function stripePaymentIntentId(paymentIntent: string | { id?: string } | null) {

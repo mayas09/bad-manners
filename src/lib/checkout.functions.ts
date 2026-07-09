@@ -26,6 +26,49 @@ const CreateSchema = z.object({
     .min(1),
 });
 
+const METADATA_CHUNK_SIZE = 450;
+const METADATA_CHUNK_PREFIX = "order_data_";
+const uuidSchema = z.string().uuid();
+
+function packOrderMetadata(orderData: z.infer<typeof CreateSchema>) {
+  const json = JSON.stringify(orderData);
+  const metadata: Record<string, string> = {
+    order_id: orderData.orderId,
+  };
+  const chunkCount = Math.ceil(json.length / METADATA_CHUNK_SIZE);
+  for (let i = 0; i < chunkCount; i += 1) {
+    metadata[`${METADATA_CHUNK_PREFIX}${i}`] = json.slice(
+      i * METADATA_CHUNK_SIZE,
+      (i + 1) * METADATA_CHUNK_SIZE,
+    );
+  }
+  metadata.order_data_chunks = String(chunkCount);
+  return metadata;
+}
+
+function unpackOrderMetadata(metadata: Record<string, string> | null | undefined) {
+  if (!metadata) throw new Error("Missing Stripe order metadata");
+  const chunkCount = Number(metadata.order_data_chunks);
+  if (!Number.isInteger(chunkCount) || chunkCount < 1) {
+    throw new Error("Incomplete Stripe order metadata");
+  }
+  const json = Array.from(
+    { length: chunkCount },
+    (_, i) => metadata[`${METADATA_CHUNK_PREFIX}${i}`],
+  ).join("");
+  return CreateSchema.parse(JSON.parse(json));
+}
+
+function stripePaymentIntentId(paymentIntent: string | { id?: string } | null) {
+  if (typeof paymentIntent === "string") return paymentIntent;
+  return paymentIntent?.id ?? null;
+}
+
+function toMenuItemId(id: string) {
+  const rawId = id.startsWith("menu:") ? id.slice(5) : id;
+  return uuidSchema.safeParse(rawId).success ? rawId : null;
+}
+
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => CreateSchema.parse(d))
@@ -67,13 +110,19 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       discounts: coupon ? [{ coupon: coupon.id }] : [],
       success_url: `${data.originUrl}/order/${data.orderId}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${data.originUrl}/checkout?cancelled=1`,
-      metadata: { order_id: data.orderId, customer_id: userId },
+      metadata: {
+        ...packOrderMetadata(data),
+        customer_id: userId,
+      },
     });
 
     return { url: session.url };
   });
 
-const FinalizeSchema = CreateSchema.omit({ originUrl: true }).extend({ sessionId: z.string() });
+const FinalizeSchema = z.object({
+  orderId: z.string().uuid(),
+  sessionId: z.string().min(1),
+});
 const CancelOrderSchema = z.object({
   orderId: z.string().uuid(),
   reason: z.string().trim().min(3).max(500),
@@ -82,7 +131,7 @@ const CancelOrderSchema = z.object({
 function toOrderItems(items: z.infer<typeof CreateSchema>["items"], orderId: string) {
   return items.map((it) => ({
     order_id: orderId,
-    menu_item_id: it.id.startsWith("menu:") ? it.id.slice(5) : null,
+    menu_item_id: toMenuItemId(it.id),
     name: it.name,
     quantity: it.quantity,
     unit_price_cents: it.unit_price_cents,
@@ -94,54 +143,99 @@ export const finalizeOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => FinalizeSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: existingOrder } = await supabase
-      .from("orders")
-      .select("id, customer_id, payment_status, stripe_session_id")
-      .eq("id", data.orderId)
-      .maybeSingle();
-    if (existingOrder) {
-      if (existingOrder.customer_id !== userId) throw new Error("Order not found");
-      if (existingOrder.payment_status === "paid") return { paid: true };
-      if (existingOrder.stripe_session_id !== data.sessionId)
-        throw new Error("Session does not match this order");
-    }
-
+    const { userId } = context;
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     const session = await stripe.checkout.sessions.retrieve(data.sessionId);
     if (session.metadata?.order_id !== data.orderId) {
       throw new Error("Session does not match this order");
     }
-    if (session.metadata?.customer_id !== userId)
+    if (session.metadata?.customer_id !== userId) {
       throw new Error("Session does not match this customer");
-    if ((session.amount_total ?? 0) !== data.totalCents)
-      throw new Error("Paid amount does not match order total");
-    if (session.payment_status === "paid") {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const orderItems = toOrderItems(data.items, data.orderId);
-      const { error: rpcErr } = await supabaseAdmin.rpc("finalize_paid_order", {
-        p_order_id: data.orderId,
-        p_customer_id: userId,
-        p_customer_name: data.customerName,
-        p_customer_phone: data.customerPhone,
-        p_customer_email: data.customerEmail ?? null,
-        p_subtotal_cents: data.subtotalCents,
-        p_total_cents: data.totalCents,
-        p_discount_cents: data.discountCents,
-        p_pickup_time: data.pickupTime,
-        p_order_notes: data.orderNotes || null,
-        p_stripe_session_id: data.sessionId,
-        p_stripe_payment_intent:
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : (session.payment_intent?.id ?? null),
-        p_items: orderItems,
-      });
-      if (rpcErr) throw new Error(`Failed to record payment: ${rpcErr.message}`);
-      return { paid: true };
     }
-    return { paid: false };
+    if (session.payment_status !== "paid") return { paid: false, orderId: data.orderId };
+
+    const orderData = unpackOrderMetadata(session.metadata);
+    if (orderData.orderId !== data.orderId) throw new Error("Session order data does not match");
+    if ((session.amount_total ?? 0) !== orderData.totalCents) {
+      throw new Error("Paid amount does not match order total");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existingOrder, error: existingErr } = await supabaseAdmin
+      .from("orders")
+      .select("id, order_number, customer_id")
+      .eq("stripe_session_id", data.sessionId)
+      .maybeSingle();
+    if (existingErr) throw new Error(`Failed to check existing order: ${existingErr.message}`);
+    if (existingOrder) {
+      if (existingOrder.customer_id !== userId) throw new Error("Order not found");
+      return { paid: true, orderId: existingOrder.id, orderNumber: existingOrder.order_number };
+    }
+
+    const { data: order, error: insertErr } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        id: orderData.orderId,
+        customer_id: userId,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        customer_email: orderData.customerEmail ?? null,
+        subtotal_cents: orderData.subtotalCents,
+        total_cents: orderData.totalCents,
+        discount_cents: orderData.discountCents,
+        pickup_time: orderData.pickupTime,
+        order_notes: orderData.orderNotes || null,
+        payment_status: "paid",
+        status: "confirmed",
+        stripe_session_id: data.sessionId,
+        stripe_payment_intent: stripePaymentIntentId(session.payment_intent),
+      })
+      .select("id, order_number")
+      .single();
+    if (insertErr?.code === "23505") {
+      const { data: duplicateOrder, error: duplicateErr } = await supabaseAdmin
+        .from("orders")
+        .select("id, order_number, customer_id")
+        .eq("stripe_session_id", data.sessionId)
+        .single();
+      if (duplicateErr || !duplicateOrder) {
+        throw new Error(
+          `Failed to read existing paid order: ${duplicateErr?.message ?? "missing order"}`,
+        );
+      }
+      if (duplicateOrder.customer_id !== userId) throw new Error("Order not found");
+      return {
+        paid: true,
+        orderId: duplicateOrder.id,
+        orderNumber: duplicateOrder.order_number,
+      };
+    }
+    if (insertErr || !order) {
+      throw new Error(`Failed to record paid order: ${insertErr?.message ?? "missing order"}`);
+    }
+
+    const { error: itemsErr } = await supabaseAdmin
+      .from("order_items")
+      .insert(toOrderItems(orderData.items, order.id));
+    if (itemsErr) throw new Error(`Failed to record order items: ${itemsErr.message}`);
+
+    if (orderData.discountCents > 0) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("free_drinks_available")
+        .eq("id", userId)
+        .single();
+      const nextFreeDrinks = Math.max(0, (profile?.free_drinks_available ?? 0) - 1);
+      const { error: redeemErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ free_drinks_available: nextFreeDrinks })
+        .eq("id", userId);
+      if (redeemErr)
+        throw new Error(`Order recorded, but reward redemption failed: ${redeemErr.message}`);
+    }
+
+    return { paid: true, orderId: order.id, orderNumber: order.order_number };
   });
 
 export const cancelOrderWithRefund = createServerFn({ method: "POST" })
@@ -208,16 +302,22 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
       update.refunded_at = new Date().toISOString();
     }
 
-    const { error: updateErr } = await supabaseAdmin.from("orders").update(update).eq("id", order.id);
+    const { error: updateErr } = await supabaseAdmin
+      .from("orders")
+      .update(update)
+      .eq("id", order.id);
     if (updateErr) throw new Error(`Failed to cancel order: ${updateErr.message}`);
 
-    const refundCopy = refundId ? " A full refund has been issued to your original payment method." : "";
+    const refundCopy = refundId
+      ? " A full refund has been issued to your original payment method."
+      : "";
     const { error: notifyErr } = await supabaseAdmin.from("notifications").insert({
       customer_id: order.customer_id,
       order_id: order.id,
       message: `Your order #${order.order_number} was cancelled. Reason: ${data.reason}.${refundCopy}`,
     });
-    if (notifyErr) throw new Error(`Order cancelled, but notification failed: ${notifyErr.message}`);
+    if (notifyErr)
+      throw new Error(`Order cancelled, but notification failed: ${notifyErr.message}`);
 
     return { cancelled: true, refunded: !!refundId };
   });

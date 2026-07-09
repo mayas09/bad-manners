@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { finalizeOrder } from "@/lib/checkout.functions";
@@ -35,6 +35,15 @@ function OrderPage() {
   const { session_id } = useSearch({ from: "/order/$orderId" });
   const finalize = useServerFn(finalizeOrder);
   const cart = useCart();
+  // Kept in a ref (not a effect dependency) because cart.clear() below
+  // creates a new cart object on every payment-finalizing run. Depending on
+  // `cart` directly would re-trigger this effect mid-flight, cancelling the
+  // in-progress run before it ever reaches the final setLoading(false) and
+  // leaving the UI stuck on "Recording your payment..." forever.
+  const cartRef = useRef(cart);
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentFinalizing, setPaymentFinalizing] = useState(!!session_id);
@@ -66,7 +75,7 @@ function OrderPage() {
         try {
           const result = await finalize({ data: { orderId, sessionId: session_id } });
           if (result?.paid) {
-            cart.clear();
+            cartRef.current.clear();
             sessionStorage.removeItem(STRIPE_DRAFT_KEY);
           }
         } catch (e) {
@@ -86,7 +95,7 @@ function OrderPage() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, session_id, finalize, cart]);
+  }, [orderId, session_id, finalize]);
 
   if (loading || paymentFinalizing) {
     return (

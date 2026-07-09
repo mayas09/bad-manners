@@ -671,7 +671,7 @@ export type Database = {
         }
         Returns: {
           already_paid: boolean
-          id: string
+          result_id: string
         }[]
       }
       has_role: {

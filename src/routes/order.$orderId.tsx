@@ -113,9 +113,13 @@ function OrderPage() {
             {paymentError ? "Payment needs attention" : "Order not found"}
           </h1>
           {paymentError && (
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              {paymentError}. If your card was charged, contact the shop and include this order ID.
-            </p>
+            <>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                {paymentError}. If your card was charged, contact the shop and include this order
+                ID.
+              </p>
+              <p className="mt-2 font-mono text-sm select-all">{orderId}</p>
+            </>
           )}
           <Link to="/" className="text-fire underline mt-4 inline-block">
             Back to site

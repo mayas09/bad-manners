@@ -17,4 +17,23 @@ export default defineConfig({
   // export from a CJS module, which only happens on the externals-tracing code path.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- noExternals isn't in the narrow LovableViteTanstackOptions surface yet, but is forwarded through to nitro() at runtime
   nitro: { noExternals: true } as any,
+  vite: {
+    resolve: {
+      alias: {
+        // Radix UI's dependency chain (react-remove-scroll, use-sidecar, aria-hidden, ...)
+        // imports tslib's helpers (__extends, __assign, __rest, __spreadArray, ...) via the
+        // bare "tslib" specifier. That resolves to tslib's `modules/index.js`, which itself
+        // destructures those helpers off a default import of tslib's CJS/UMD build — a build
+        // whose exports are assigned dynamically inside a factory callback rather than as
+        // static `exports.x = ...` statements. Bundler static analysis can't see those
+        // exports, so the synthetic interop it generates for that default import resolves to
+        // undefined at runtime, crashing SSR with
+        // "TypeError: Cannot destructure property '__extends' of ... as it is undefined".
+        // Pointing every "tslib" import straight at tslib's real ESM build (plain `export
+        // function __extends() {}` statements, no CJS interop involved) removes the ambiguity
+        // for every consumer at once.
+        tslib: "tslib/tslib.es6.mjs",
+      },
+    },
+  },
 });

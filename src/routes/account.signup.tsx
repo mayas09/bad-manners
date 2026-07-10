@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -77,10 +77,13 @@ function SignupPage() {
 
   async function google() {
     const next = search.next ? `?next=${encodeURIComponent(search.next as string)}` : "";
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/account/login${next}`,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/account/login${next}`,
+      },
     });
-    if (result.error) toast.error("Google sign-in failed");
+    if (error) toast.error("Google sign-in failed");
   }
 
   if (pendingEmail) {

@@ -54,7 +54,7 @@ class AccountWidgetsBoundary extends Component<{ children: ReactNode }, { hasErr
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Bad Manners Coffee — West Asheville's goth-Barbie coffee shop" },
+      { title: "Bad Manners Coffee" },
       {
         name: "description",
         content:
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Goth-Barbie-punk coffee on Haywood Rd. Specialty espresso, seasonal drinks, pop-ups.",
+          "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted.",
       },
       { property: "og:image", content: FALLBACK_PHOTOS.heroInterior },
       { name: "twitter:image", content: FALLBACK_PHOTOS.heroInterior },

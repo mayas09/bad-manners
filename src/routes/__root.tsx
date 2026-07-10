@@ -79,27 +79,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bad Manners Coffee | West Asheville, NC" },
+      { title: "Bad Manners Coffee" },
       {
         name: "description",
         content:
-          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+          "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted.",
       },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Bad Manners Coffee | West Asheville, NC" },
+      { property: "og:title", content: "Bad Manners Coffee" },
       {
         property: "og:description",
         content:
-          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+          "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Bad Manners Coffee | West Asheville, NC" },
+      { name: "twitter:title", content: "Bad Manners Coffee" },
       {
         name: "twitter:description",
         content:
-          "Bad Manners Coffee is a coffee shop in West Asheville, NC. Order ahead for pickup and explore our coffee, tea, and seasonal menu.",
+          "Independent coffee shop on Haywood Rd, West Asheville. Specialty espresso, seasonal drinks, dog-friendly, mutual-aid rooted.",
       },
       {
         property: "og:image",

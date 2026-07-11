@@ -3,7 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 const OLD_URL = "https://ttwmnzfqamdiewkrucdn.supabase.co";
 const OLD_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const NEW_URL = "https://nhncjaudtnplatwvbcab.supabase.co";
-const NEW_KEY = "sb_secret_hD49DnNF-msP0lCflJaFxw_yr5w6sMl";
+const NEW_KEY = process.env.NEW_SUPABASE_SERVICE_ROLE_KEY;
+
+if (!OLD_KEY || !NEW_KEY) {
+  console.error("Missing required service-role environment variables.");
+  process.exit(1);
+}
 
 const oldC = createClient(OLD_URL, OLD_KEY, { auth: { persistSession: false } });
 const newC = createClient(NEW_URL, NEW_KEY, { auth: { persistSession: false } });

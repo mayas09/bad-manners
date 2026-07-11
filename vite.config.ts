@@ -15,8 +15,11 @@ export default defineConfig({
   // noExternals: bundle all server deps instead of externalizing + nf3-tracing them.
   // The installed nf3/@vercel/nft build fails at build time trying to import a named
   // export from a CJS module, which only happens on the externals-tracing code path.
+  // Preset is chosen at build time via DEPLOY_TARGET so the same codebase builds for either
+  // platform without manual edits: set DEPLOY_TARGET=netlify in that platform's env vars to
+  // opt back into the netlify preset; any other value (or unset) defaults to vercel.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- noExternals isn't in the narrow LovableViteTanstackOptions surface yet, but is forwarded through to nitro() at runtime
-  nitro: { noExternals: true, preset: "netlify" } as any,
+  nitro: { noExternals: true, preset: process.env.DEPLOY_TARGET === "netlify" ? "netlify" : "vercel" } as any,
   vite: {
     resolve: {
       alias: {

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
-import { AuthShell, GoogleButton } from "@/components/site/AuthShell";
+import { AuthShell } from "@/components/site/AuthShell";
 
 const searchSchema = z.object({ next: z.string().optional() });
 
@@ -75,16 +75,6 @@ function SignupPage() {
     }
   }
 
-  async function google() {
-    const next = search.next ? `?next=${encodeURIComponent(search.next as string)}` : "";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/account/login${next}`,
-      },
-    });
-    if (error) toast.error("Google sign-in failed");
-  }
 
   if (pendingEmail) {
     return (
@@ -133,12 +123,6 @@ function SignupPage() {
         Order ahead. Skip the line. Get more coffee.
       </p>
 
-      <div className="mt-6">
-        <GoogleButton onClick={google} />
-      </div>
-      <div className="my-4 flex items-center gap-2 text-xs text-slate-500">
-        <div className="h-px flex-1 bg-slate-700" /> or <div className="h-px flex-1 bg-slate-700" />
-      </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">

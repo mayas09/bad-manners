@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Coffee, Clock, Inbox } from "lucide-react";
+import { Coffee, Clock, Inbox, ShoppingBag, UserPlus } from "lucide-react";
 import { formatInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/admin/")({

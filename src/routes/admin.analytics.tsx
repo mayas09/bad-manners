@@ -167,7 +167,28 @@ function AnalyticsPage() {
         <Stat label="Orders this month" value={data.ordersMonth.toString()} />
         <Stat label="New customers (7d)" value={data.newCustomersWeek.toString()} />
         <Stat label="New customers (30d)" value={data.newCustomersMonth.toString()} />
+        <Stat label="Avg order value (month)" value={formatCents(data.avgOrderValue)} />
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 className="font-semibold text-slate-900">Daily revenue (last 7 days)</h2>
+        <div className="mt-4 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data.dailyRevenue}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
+              <YAxis
+                stroke="#64748b"
+                fontSize={12}
+                tickFormatter={(v) => formatCents(Number(v))}
+              />
+              <Tooltip formatter={(v: number) => formatCents(v)} />
+              <Bar dataKey="revenue" fill="#ec4899" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="font-semibold text-slate-900">Top 5 items (30 days)</h2>

@@ -75,7 +75,20 @@ function Overview() {
       icon: Inbox,
       hint: "Catering / event inquiries",
     },
+    {
+      label: "Active Orders",
+      value: stats?.activeOrders ?? "…",
+      icon: ShoppingBag,
+      hint: "Pending, confirmed, or ready",
+    },
+    {
+      label: "New Customers This Week",
+      value: stats?.newCustomersWeek ?? "…",
+      icon: UserPlus,
+      hint: "Signed up in the last 7 days",
+    },
   ];
+
 
   return (
     <div className="space-y-6">

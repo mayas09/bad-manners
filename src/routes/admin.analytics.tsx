@@ -102,17 +102,41 @@ function AnalyticsPage() {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
+        // Last 7 days daily revenue
+        const days: { day: string; revenue: number }[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() - i);
+          const next = new Date(d);
+          next.setDate(next.getDate() + 1);
+          const rev = (revenueEvents.data ?? [])
+            .filter((e) => e.created_at >= d.toISOString() && e.created_at < next.toISOString())
+            .reduce((s, e) => s + (e.value_cents ?? 0), 0);
+          days.push({
+            day: d.toLocaleDateString(undefined, { weekday: "short" }),
+            revenue: rev,
+          });
+        }
+
+        const revMonth = sumRevenue(monthISO);
+        const ordMonth = countOrders(monthISO);
+        const avgOrderValue = ordMonth > 0 ? Math.round(revMonth / ordMonth) : 0;
+
         setData({
           revenueToday: sumRevenue(dayISO),
           revenueWeek: sumRevenue(weekISO),
-          revenueMonth: sumRevenue(monthISO),
+          revenueMonth: revMonth,
           ordersToday: countOrders(dayISO),
           ordersWeek: countOrders(weekISO),
-          ordersMonth: countOrders(monthISO),
+          ordersMonth: ordMonth,
           newCustomersWeek: custWeek.count ?? 0,
           newCustomersMonth: custMonth.count ?? 0,
           topItems,
+          dailyRevenue: days,
+          avgOrderValue,
         });
+
       } catch (e: any) {
         setError(e?.message ?? "Failed to load analytics");
       } finally {

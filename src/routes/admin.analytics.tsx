@@ -27,7 +27,10 @@ type Summary = {
   newCustomersWeek: number;
   newCustomersMonth: number;
   topItems: { name: string; count: number }[];
+  dailyRevenue: { day: string; revenue: number }[];
+  avgOrderValue: number;
 };
+
 
 function startOf(kind: "day" | "week" | "month") {
   if (kind === "week") {

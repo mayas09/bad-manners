@@ -23,6 +23,7 @@ export const Route = createFileRoute("/admin")({
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/admin/welcome", label: "Welcome", icon: Sparkles, exact: false },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false },
   { to: "/admin/menu", label: "Menu", icon: Coffee, exact: false },
   { to: "/admin/photos", label: "Photos", icon: ImageIcon, exact: false },

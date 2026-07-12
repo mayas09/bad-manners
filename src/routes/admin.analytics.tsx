@@ -2,6 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/price-utils";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
 
 export const Route = createFileRoute("/admin/analytics")({
   component: AnalyticsPage,
@@ -17,7 +27,10 @@ type Summary = {
   newCustomersWeek: number;
   newCustomersMonth: number;
   topItems: { name: string; count: number }[];
+  dailyRevenue: { day: string; revenue: number }[];
+  avgOrderValue: number;
 };
+
 
 function startOf(kind: "day" | "week" | "month") {
   if (kind === "week") {
@@ -89,17 +102,41 @@ function AnalyticsPage() {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
+        // Last 7 days daily revenue
+        const days: { day: string; revenue: number }[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() - i);
+          const next = new Date(d);
+          next.setDate(next.getDate() + 1);
+          const rev = (revenueEvents.data ?? [])
+            .filter((e) => e.created_at >= d.toISOString() && e.created_at < next.toISOString())
+            .reduce((s, e) => s + (e.value_cents ?? 0), 0);
+          days.push({
+            day: d.toLocaleDateString(undefined, { weekday: "short" }),
+            revenue: rev,
+          });
+        }
+
+        const revMonth = sumRevenue(monthISO);
+        const ordMonth = countOrders(monthISO);
+        const avgOrderValue = ordMonth > 0 ? Math.round(revMonth / ordMonth) : 0;
+
         setData({
           revenueToday: sumRevenue(dayISO),
           revenueWeek: sumRevenue(weekISO),
-          revenueMonth: sumRevenue(monthISO),
+          revenueMonth: revMonth,
           ordersToday: countOrders(dayISO),
           ordersWeek: countOrders(weekISO),
-          ordersMonth: countOrders(monthISO),
+          ordersMonth: ordMonth,
           newCustomersWeek: custWeek.count ?? 0,
           newCustomersMonth: custMonth.count ?? 0,
           topItems,
+          dailyRevenue: days,
+          avgOrderValue,
         });
+
       } catch (e: any) {
         setError(e?.message ?? "Failed to load analytics");
       } finally {
@@ -130,7 +167,28 @@ function AnalyticsPage() {
         <Stat label="Orders this month" value={data.ordersMonth.toString()} />
         <Stat label="New customers (7d)" value={data.newCustomersWeek.toString()} />
         <Stat label="New customers (30d)" value={data.newCustomersMonth.toString()} />
+        <Stat label="Avg order value (month)" value={formatCents(data.avgOrderValue)} />
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 className="font-semibold text-slate-900">Daily revenue (last 7 days)</h2>
+        <div className="mt-4 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data.dailyRevenue}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
+              <YAxis
+                stroke="#64748b"
+                fontSize={12}
+                tickFormatter={(v) => formatCents(Number(v))}
+              />
+              <Tooltip formatter={(v: number) => formatCents(v)} />
+              <Bar dataKey="revenue" fill="#ec4899" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="font-semibold text-slate-900">Top 5 items (30 days)</h2>

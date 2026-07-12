@@ -14,6 +14,7 @@ import {
   LogOut,
   ExternalLink,
   BarChart3,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({

@@ -13,25 +13,41 @@ function Overview() {
     menuCount: number;
     lastUpdated: string | null;
     inquiryCount: number;
+    activeOrders: number;
+    newCustomersWeek: number;
   } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [menu, inquiries] = await Promise.all([
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekISO = weekAgo.toISOString();
+      const [menu, inquiries, activeOrders, newCust] = await Promise.all([
         supabase
           .from("menu_items")
           .select("updated_at", { count: "exact" })
           .order("updated_at", { ascending: false })
           .limit(1),
         supabase.from("catering_inquiries").select("id", { count: "exact", head: true }),
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["pending", "confirmed", "ready"]),
+        supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", weekISO),
       ]);
       setStats({
         menuCount: menu.count ?? 0,
         lastUpdated: menu.data?.[0]?.updated_at ?? null,
         inquiryCount: inquiries.count ?? 0,
+        activeOrders: activeOrders.count ?? 0,
+        newCustomersWeek: newCust.count ?? 0,
       });
     })();
   }, []);
+
 
   const cards = [
     {

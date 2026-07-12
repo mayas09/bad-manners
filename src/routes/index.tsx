@@ -680,8 +680,8 @@ function Community({ photos: PHOTOS }: { photos: SiteImages }) {
         <div className="lg:col-span-3 grid gap-4 sm:grid-cols-1">
           {cards.map((c, i) => (
             <div key={i} className="reveal tilt-card glass rounded-2xl p-6 flex gap-5">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-fire text-white">
-                <c.icon className="size-7" />
+              <div className="community-icon-orb shrink-0">
+                <c.icon className="size-7 relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" />
               </div>
               <div>
                 <h3 className="font-display text-2xl">{c.title}</h3>

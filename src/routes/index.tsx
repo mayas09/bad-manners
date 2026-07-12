@@ -592,13 +592,10 @@ function MenuSection({
 /* --------------------------------- gallery --------------------------------- */
 
 function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
-  const images = PHOTOS.gallery;
-  const loop = [...images, ...images];
   return (
     <section className="mx-auto max-w-7xl px-4 py-20">
-      {/* Reduced-motion fallback: static grid */}
-      <div className="reveal gallery-marquee-fallback grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-        {images.map((src, i) => (
+      <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        {PHOTOS.gallery.map((src, i) => (
           <div
             key={i}
             className={`tilt-card relative overflow-hidden rounded-2xl ${i % 5 === 0 ? "sm:row-span-2 sm:aspect-square" : "aspect-square"}`}
@@ -607,33 +604,11 @@ function Gallery({ photos: PHOTOS }: { photos: SiteImages }) {
               src={src}
               alt={`Bad Manners Coffee gallery photo ${i + 1}`}
               loading="lazy"
-              className="h-full w-full object-cover"
+              className="gallery-ken-burns h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+              style={{ animationDelay: `${i * -2.75}s` }}
             />
           </div>
         ))}
-      </div>
-      {/* Auto-scrolling marquee */}
-      <div
-        className="reveal gallery-marquee group relative overflow-hidden"
-        aria-label="Bad Manners Coffee gallery"
-      >
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-20 bg-gradient-to-r from-background to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-20 bg-gradient-to-l from-background to-transparent" />
-        <div className="gallery-marquee-track flex gap-4 will-change-transform">
-          {loop.map((src, i) => (
-            <div
-              key={i}
-              className="relative shrink-0 overflow-hidden rounded-2xl ring-1 ring-[--pink]/20 shadow-lg h-56 w-56 sm:h-72 sm:w-72"
-            >
-              <img
-                src={src}
-                alt={`Bad Manners Coffee gallery photo ${(i % images.length) + 1}`}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -680,8 +655,8 @@ function Community({ photos: PHOTOS }: { photos: SiteImages }) {
         <div className="lg:col-span-3 grid gap-4 sm:grid-cols-1">
           {cards.map((c, i) => (
             <div key={i} className="reveal tilt-card glass rounded-2xl p-6 flex gap-5">
-              <div className="community-icon-orb shrink-0">
-                <c.icon className="size-7 relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" />
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-fire text-white">
+                <c.icon className="size-7" />
               </div>
               <div>
                 <h3 className="font-display text-2xl">{c.title}</h3>

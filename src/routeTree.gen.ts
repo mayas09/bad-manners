@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
+import { Route as AdminWelcomeRouteImport } from './routes/admin.welcome'
 import { Route as AdminPhotosRouteImport } from './routes/admin.photos'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
@@ -62,6 +63,11 @@ const OrderOrderIdRoute = OrderOrderIdRouteImport.update({
   id: '/order/$orderId',
   path: '/order/$orderId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminPhotosRoute = AdminPhotosRouteImport.update({
   id: '/photos',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/order/$orderId': typeof OrderOrderIdRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
+    | '/admin/welcome'
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
+    | '/admin/welcome'
     | '/order/$orderId'
     | '/account'
     | '/admin'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/photos'
+    | '/admin/welcome'
     | '/order/$orderId'
     | '/account/'
     | '/admin/'
@@ -297,6 +309,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/order/$orderId'
       preLoaderRoute: typeof OrderOrderIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/welcome': {
+      id: '/admin/welcome'
+      path: '/welcome'
+      fullPath: '/admin/welcome'
+      preLoaderRoute: typeof AdminWelcomeRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/photos': {
       id: '/admin/photos'
@@ -406,6 +425,7 @@ interface AdminRouteChildren {
   AdminMenuRoute: typeof AdminMenuRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPhotosRoute: typeof AdminPhotosRoute
+  AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -416,6 +436,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMenuRoute: AdminMenuRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPhotosRoute: AdminPhotosRoute,
+  AdminWelcomeRoute: AdminWelcomeRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

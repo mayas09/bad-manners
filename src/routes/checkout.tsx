@@ -278,7 +278,7 @@ function CheckoutPage() {
             <p className="text-sm text-muted-foreground">
               Pickup only. Pay now with Stripe, or pay in person at pickup.
             </p>
-            {paymentMethod === "stripe" && (
+            {paymentMethod === "stripe" && import.meta.env.DEV && (
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-900">
                 <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
                 Stripe TEST MODE — use card 4242 4242 4242 4242, any future expiry, any CVC

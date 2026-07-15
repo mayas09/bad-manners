@@ -46,7 +46,7 @@ function LoginPage() {
     async (userId: string, email: string | null) => {
       if (navigatingRef.current) return;
       navigatingRef.current = true;
-      await claim({ data: { userId, email: email ?? "" } }).catch(() => {});
+      await claim().catch(() => {});
       const roleDest = await resolveRedirect(userId);
       const requestedDest = search.next as string | undefined;
       const dest =

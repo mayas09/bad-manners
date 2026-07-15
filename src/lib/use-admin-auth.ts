@@ -39,8 +39,9 @@ export function useAdminAuth(): AdminAuthState {
         .eq("role", "admin")
         .maybeSingle();
       // Auto-promote allowlisted emails regardless of sign-in method (password or OAuth).
+      // The server function reads the user id/email from the verified session — client args are ignored.
       if (!data && email) {
-        await claim({ data: { userId, email } }).catch(() => {});
+        await claim().catch(() => {});
         ({ data } = await supabase
           .from("user_roles")
           .select("role")

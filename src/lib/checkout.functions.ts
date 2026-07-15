@@ -105,22 +105,82 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   .inputValidator((d) => CreateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const itemTotal = data.items.reduce(
-      (sum, item) => sum + item.quantity * item.unit_price_cents,
+
+    // Server-side price validation: trust ONLY prices from menu_items.
+    // Client-supplied unit_price_cents, subtotal, discount, and total are ignored.
+    const menuIds: string[] = [];
+    for (const it of data.items) {
+      const menuId = toMenuItemId(it.id);
+      if (!menuId) throw new Error(`Cart contains an item that isn't on the menu: ${it.name}`);
+      menuIds.push(menuId);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: menuRows, error: menuErr } = await supabaseAdmin
+      .from("menu_items")
+      .select("id, name, price_cents, is_sold_out")
+      .in("id", menuIds);
+    if (menuErr) throw new Error(`Failed to load menu prices: ${menuErr.message}`);
+    const priceMap = new Map((menuRows ?? []).map((r) => [r.id, r]));
+
+    const verifiedItems = data.items.map((it) => {
+      const menuId = toMenuItemId(it.id)!;
+      const row = priceMap.get(menuId);
+      if (!row) throw new Error(`Menu item no longer available: ${it.name}`);
+      if (row.is_sold_out) throw new Error(`Sold out: ${row.name}`);
+      if (!row.price_cents || row.price_cents <= 0) {
+        throw new Error(`This item can't be ordered online: ${row.name}`);
+      }
+      return {
+        id: it.id,
+        name: row.name,
+        quantity: it.quantity,
+        unit_price_cents: row.price_cents,
+        special_notes: it.special_notes ?? null,
+      };
+    });
+
+    const serverSubtotal = verifiedItems.reduce(
+      (s, it) => s + it.quantity * it.unit_price_cents,
       0,
     );
-    if (itemTotal !== data.subtotalCents) throw new Error("Cart total changed");
-    if (Math.max(0, data.subtotalCents - data.discountCents) !== data.totalCents) {
-      throw new Error("Order total changed");
+
+    // Discount: recomputed server-side from the caller's own free-drink balance.
+    let serverDiscount = 0;
+    if (data.discountCents > 0) {
+      const { data: profile, error: profileErr } = await supabaseAdmin
+        .from("profiles")
+        .select("free_drinks_available")
+        .eq("id", userId)
+        .single();
+      if (profileErr) throw new Error(`Failed to check reward balance: ${profileErr.message}`);
+      if ((profile?.free_drinks_available ?? 0) <= 0) {
+        throw new Error("No free drink reward available");
+      }
+      const cheapest = verifiedItems.reduce(
+        (m, it) => (it.unit_price_cents < m ? it.unit_price_cents : m),
+        Number.POSITIVE_INFINITY,
+      );
+      serverDiscount = Number.isFinite(cheapest) ? cheapest : 0;
     }
+    const serverTotal = Math.max(0, serverSubtotal - serverDiscount);
+
+    // Rebuild the payload with server-verified values before packing into metadata.
+    const verifiedPayload: z.infer<typeof CreateSchema> = {
+      ...data,
+      items: verifiedItems,
+      subtotalCents: serverSubtotal,
+      discountCents: serverDiscount,
+      totalCents: serverTotal,
+    };
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
     const coupon =
-      data.discountCents > 0
+      serverDiscount > 0
         ? await stripe.coupons.create({
-            amount_off: data.discountCents,
+            amount_off: serverDiscount,
             currency: "usd",
             duration: "once",
             name: "Free drink reward",
@@ -130,7 +190,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-      line_items: data.items.map((it) => ({
+      line_items: verifiedItems.map((it) => ({
         price_data: {
           currency: "usd",
           product_data: { name: it.name },
@@ -142,7 +202,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       success_url: `${data.originUrl}/order/${data.orderId}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${data.originUrl}/checkout?cancelled=1`,
       metadata: {
-        ...packOrderMetadata(data),
+        ...packOrderMetadata(verifiedPayload),
         customer_id: userId,
       },
     });

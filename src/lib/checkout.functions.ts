@@ -118,7 +118,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: menuRows, error: menuErr } = await supabaseAdmin
       .from("menu_items")
-      .select("id, name, price_cents, available")
+      .select("id, name, price_cents, is_sold_out")
       .in("id", menuIds);
     if (menuErr) throw new Error(`Failed to load menu prices: ${menuErr.message}`);
     const priceMap = new Map((menuRows ?? []).map((r) => [r.id, r]));
@@ -127,7 +127,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const menuId = toMenuItemId(it.id)!;
       const row = priceMap.get(menuId);
       if (!row) throw new Error(`Menu item no longer available: ${it.name}`);
-      if (row.available === false) throw new Error(`Not available: ${row.name}`);
+      if (row.is_sold_out) throw new Error(`Sold out: ${row.name}`);
       if (!row.price_cents || row.price_cents <= 0) {
         throw new Error(`This item can't be ordered online: ${row.name}`);
       }

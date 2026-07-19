@@ -219,16 +219,6 @@ const CancelOrderSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
-function toOrderItems(items: z.infer<typeof CreateSchema>["items"], orderId: string) {
-  return items.map((it) => ({
-    order_id: orderId,
-    menu_item_id: toMenuItemId(it.id),
-    name: it.name,
-    quantity: it.quantity,
-    unit_price_cents: it.unit_price_cents,
-    special_notes: it.special_notes || null,
-  }));
-}
 
 export const finalizeOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -253,81 +243,42 @@ export const finalizeOrder = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existingOrder, error: existingErr } = await supabaseAdmin
-      .from("orders")
-      .select("id, order_number, customer_id")
-      .eq("stripe_session_id", data.sessionId)
-      .maybeSingle();
-    if (existingErr) throw new Error(`Failed to check existing order: ${existingErr.message}`);
-    if (existingOrder) {
-      if (existingOrder.customer_id !== userId) throw new Error("Order not found");
-      return { paid: true, orderId: existingOrder.id, orderNumber: existingOrder.order_number };
-    }
 
-    const { data: order, error: insertErr } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        id: orderData.orderId,
-        customer_id: userId,
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        customer_email: orderData.customerEmail ?? null,
-        subtotal_cents: orderData.subtotalCents,
-        total_cents: orderData.totalCents,
-        discount_cents: orderData.discountCents,
-        pickup_time: orderData.pickupTime,
-        order_notes: orderData.orderNotes || null,
-        payment_status: "paid",
-        status: "confirmed",
-        stripe_session_id: data.sessionId,
-        stripe_payment_intent: stripePaymentIntentId(session.payment_intent),
-      })
-      .select("id, order_number")
-      .single();
-    if (insertErr?.code === "23505") {
-      const { data: duplicateOrder, error: duplicateErr } = await supabaseAdmin
-        .from("orders")
-        .select("id, order_number, customer_id")
-        .eq("stripe_session_id", data.sessionId)
-        .single();
-      if (duplicateErr || !duplicateOrder) {
-        throw new Error(
-          `Failed to read existing paid order: ${duplicateErr?.message ?? "missing order"}`,
-        );
-      }
-      if (duplicateOrder.customer_id !== userId) throw new Error("Order not found");
-      return {
-        paid: true,
-        orderId: duplicateOrder.id,
-        orderNumber: duplicateOrder.order_number,
-      };
-    }
-    if (insertErr || !order) {
-      throw new Error(`Failed to record paid order: ${insertErr?.message ?? "missing order"}`);
-    }
+    const itemsPayload = orderData.items.map((it) => ({
+      menu_item_id: toMenuItemId(it.id),
+      name: it.name,
+      quantity: it.quantity,
+      unit_price_cents: it.unit_price_cents,
+      special_notes: it.special_notes || null,
+    }));
 
-    const { error: itemsErr } = await supabaseAdmin
-      .from("order_items")
-      .insert(toOrderItems(orderData.items, order.id));
-    if (itemsErr) throw new Error(`Failed to record order items: ${itemsErr.message}`);
-
-    if (orderData.discountCents > 0) {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("free_drinks_available")
-        .eq("id", userId)
-        .single();
-      const nextFreeDrinks = Math.max(0, (profile?.free_drinks_available ?? 0) - 1);
-      const { error: redeemErr } = await supabaseAdmin
-        .from("profiles")
-        .update({ free_drinks_available: nextFreeDrinks })
-        .eq("id", userId);
-      if (redeemErr)
-        throw new Error(`Order recorded, but reward redemption failed: ${redeemErr.message}`);
-    }
-
-    return { paid: true, orderId: order.id, orderNumber: order.order_number };
+    const { data: rpcRows, error: rpcErr } = await (supabaseAdmin.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{
+      data: { order_id: string; order_number: number; already_existed: boolean }[] | null;
+      error: { message: string } | null;
+    }>)("record_paid_order", {
+      p_order_id: orderData.orderId,
+      p_customer_id: userId,
+      p_customer_name: orderData.customerName,
+      p_customer_phone: orderData.customerPhone,
+      p_customer_email: orderData.customerEmail ?? null,
+      p_subtotal_cents: orderData.subtotalCents,
+      p_total_cents: orderData.totalCents,
+      p_discount_cents: orderData.discountCents,
+      p_pickup_time: orderData.pickupTime,
+      p_order_notes: orderData.orderNotes ?? null,
+      p_stripe_session_id: data.sessionId,
+      p_stripe_payment_intent: stripePaymentIntentId(session.payment_intent),
+      p_items: itemsPayload,
+    });
+    if (rpcErr) throw new Error(`Failed to record paid order: ${rpcErr.message}`);
+    const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+    if (!row) throw new Error("Failed to record paid order: empty result");
+    return { paid: true, orderId: row.order_id, orderNumber: row.order_number };
   });
+
 
 export const cancelOrderWithRefund = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

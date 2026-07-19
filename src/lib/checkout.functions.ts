@@ -219,16 +219,6 @@ const CancelOrderSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
-function toOrderItems(items: z.infer<typeof CreateSchema>["items"], orderId: string) {
-  return items.map((it) => ({
-    order_id: orderId,
-    menu_item_id: toMenuItemId(it.id),
-    name: it.name,
-    quantity: it.quantity,
-    unit_price_cents: it.unit_price_cents,
-    special_notes: it.special_notes || null,
-  }));
-}
 
 export const finalizeOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

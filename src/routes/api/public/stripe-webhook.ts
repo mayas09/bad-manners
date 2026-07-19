@@ -116,50 +116,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Idempotency: if this session already produced an order, we're done.
-        const { data: existing, error: existingErr } = await supabaseAdmin
-          .from("orders")
-          .select("id")
-          .eq("stripe_session_id", session.id)
-          .maybeSingle();
-        if (existingErr) {
-          console.error("stripe-webhook: existing lookup failed", existingErr);
-          return new Response("DB error", { status: 500 });
-        }
-        if (existing) return new Response("ok", { status: 200 });
-
-        const { data: order, error: insertErr } = await supabaseAdmin
-          .from("orders")
-          .insert({
-            id: orderData.orderId,
-            customer_id: customerId,
-            customer_name: orderData.customerName,
-            customer_phone: orderData.customerPhone,
-            customer_email: orderData.customerEmail ?? null,
-            subtotal_cents: orderData.subtotalCents,
-            total_cents: orderData.totalCents,
-            discount_cents: orderData.discountCents,
-            pickup_time: orderData.pickupTime,
-            order_notes: orderData.orderNotes || null,
-            payment_status: "paid",
-            status: "confirmed",
-            stripe_session_id: session.id,
-            stripe_payment_intent: stripePaymentIntentId(session.payment_intent),
-          })
-          .select("id")
-          .single();
-
-        if (insertErr?.code === "23505") {
-          // Concurrent insert (client finalizeOrder won the race). That's fine.
-          return new Response("ok", { status: 200 });
-        }
-        if (insertErr || !order) {
-          console.error("stripe-webhook: order insert failed", insertErr);
-          return new Response("DB error", { status: 500 });
-        }
-
-        const items = orderData.items.map((it) => ({
-          order_id: order.id,
+        const itemsPayload = orderData.items.map((it) => ({
           menu_item_id: toMenuItemId(it.id),
           name: it.name,
           quantity: it.quantity,
@@ -167,24 +124,28 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           special_notes: it.special_notes || null,
         }));
 
-        const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(items);
-        if (itemsErr) {
-          console.error("stripe-webhook: order_items insert failed", itemsErr);
-          return new Response("DB error", { status: 500 });
-        }
+        const { error: rpcErr } = await (supabaseAdmin.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: unknown; error: { message: string } | null }>)("record_paid_order", {
+          p_order_id: orderData.orderId,
+          p_customer_id: customerId,
+          p_customer_name: orderData.customerName,
+          p_customer_phone: orderData.customerPhone,
+          p_customer_email: orderData.customerEmail ?? null,
+          p_subtotal_cents: orderData.subtotalCents,
+          p_total_cents: orderData.totalCents,
+          p_discount_cents: orderData.discountCents,
+          p_pickup_time: orderData.pickupTime,
+          p_order_notes: orderData.orderNotes ?? null,
+          p_stripe_session_id: session.id,
+          p_stripe_payment_intent: stripePaymentIntentId(session.payment_intent),
+          p_items: itemsPayload,
+        });
 
-        if (orderData.discountCents > 0) {
-          const { data: profile } = await supabaseAdmin
-            .from("profiles")
-            .select("free_drinks_available")
-            .eq("id", customerId)
-            .single();
-          const next = Math.max(0, (profile?.free_drinks_available ?? 0) - 1);
-          const { error: redeemErr } = await supabaseAdmin
-            .from("profiles")
-            .update({ free_drinks_available: next })
-            .eq("id", customerId);
-          if (redeemErr) console.error("stripe-webhook: reward redeem failed", redeemErr);
+        if (rpcErr) {
+          console.error("stripe-webhook: record_paid_order failed", rpcErr);
+          return new Response("DB error", { status: 500 });
         }
 
         return new Response("ok", { status: 200 });
@@ -192,3 +153,4 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
     },
   },
 });
+

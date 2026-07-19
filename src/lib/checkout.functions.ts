@@ -262,7 +262,13 @@ export const finalizeOrder = createServerFn({ method: "POST" })
       special_notes: it.special_notes || null,
     }));
 
-    const { data: rpcRows, error: rpcErr } = await supabaseAdmin.rpc("record_paid_order", {
+    const { data: rpcRows, error: rpcErr } = await (supabaseAdmin.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{
+      data: { order_id: string; order_number: number; already_existed: boolean }[] | null;
+      error: { message: string } | null;
+    }>)("record_paid_order", {
       p_order_id: orderData.orderId,
       p_customer_id: userId,
       p_customer_name: orderData.customerName,

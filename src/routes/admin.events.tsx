@@ -31,6 +31,18 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: "Accepted",
   declined: "Declined",
 };
+
+type Inquiry = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  event_type: string | null;
+  event_date: string | null;
+  guest_count: number | null;
+  message: string;
+  created_at: string;
+};
 const STATUS_BADGES: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   under_review: "bg-blue-100 text-blue-800",
@@ -40,6 +52,7 @@ const STATUS_BADGES: Record<string, string> = {
 
 function AdminEventsPage() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [customers, setCustomers] = useState<Record<string, { name: string; email: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -66,6 +79,11 @@ function AdminEventsPage() {
       }
       setCustomers(map);
     }
+    const { data: inq } = await supabase
+      .from("catering_inquiries")
+      .select("id,name,email,phone,event_type,event_date,guest_count,message,created_at")
+      .order("created_at", { ascending: false });
+    setInquiries((inq as Inquiry[]) ?? []);
     setLoading(false);
   }
 
@@ -202,6 +220,78 @@ function AdminEventsPage() {
           );
         })}
       </div>
+
+      <div className="pt-6 border-t border-slate-200">
+        <h2 className="text-xl font-semibold text-slate-900">Public Inquiries</h2>
+        <p className="text-sm text-slate-500">
+          {inquiries.length} inquir{inquiries.length === 1 ? "y" : "ies"} from the public catering form
+        </p>
+
+        <div className="mt-4 space-y-4">
+          {inquiries.length === 0 && (
+            <p className="text-slate-500 py-6 text-center">No public inquiries yet.</p>
+          )}
+          {inquiries.map((i) => (
+            <div key={i.id} className="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {i.event_type || "General Inquiry"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {i.name} ·{" "}
+                    <a href={`mailto:${i.email}`} className="hover:underline">
+                      {i.email}
+                    </a>
+                    {i.phone && (
+                      <>
+                        {" · "}
+                        <a href={`tel:${i.phone}`} className="hover:underline">
+                          {i.phone}
+                        </a>
+                      </>
+                    )}
+                  </p>
+                </div>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider bg-purple-100 text-purple-800">
+                  Guest
+                </span>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-700">
+                <p>
+                  <span className="text-slate-400">Date:</span>{" "}
+                  {i.event_date ? formatPlainDateInSiteTime(i.event_date) : "—"}
+                </p>
+                <p>
+                  <span className="text-slate-400">Guests:</span> {i.guest_count ?? "—"}
+                </p>
+              </div>
+
+              <p className="text-sm italic bg-slate-50 p-3 rounded border border-slate-100">
+                "{i.message}"
+              </p>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <a
+                  href={`mailto:${i.email}?subject=Re: Your catering inquiry`}
+                  className="text-sm font-medium text-fire hover:underline"
+                >
+                  Reply via email →
+                </a>
+                <span className="text-xs text-slate-400">
+                  Submitted{" "}
+                  {formatInSiteTime(i.created_at, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+

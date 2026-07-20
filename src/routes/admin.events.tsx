@@ -52,6 +52,7 @@ const STATUS_BADGES: Record<string, string> = {
 
 function AdminEventsPage() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [customers, setCustomers] = useState<Record<string, { name: string; email: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);

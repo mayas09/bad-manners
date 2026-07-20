@@ -12,8 +12,8 @@ INSERT INTO public.app_settings (key, value) VALUES
   ('store_max_days_ahead', '14')
 ON CONFLICT (key) DO NOTHING;
 
--- 2) Helper to read an integer setting with a fallback.
-CREATE OR REPLACE FUNCTION public.get_int_setting(p_key text, p_default integer)
+-- 2) Helpers to read settings with fallbacks.
+CREATE OR REPLACE FUNCTION public.get_setting_int(p_key text, p_default integer)
 RETURNS integer
 LANGUAGE sql
 STABLE
@@ -26,7 +26,21 @@ AS $$
   LIMIT 1;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.get_int_setting(text, integer) FROM PUBLIC;
+CREATE OR REPLACE FUNCTION public.get_setting_text(p_key text, p_default text)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(value #>> '{}', p_default)
+  FROM public.app_settings
+  WHERE key = p_key
+  LIMIT 1;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.get_setting_int(text, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_setting_text(text, text) FROM PUBLIC;
 
 -- 3) Replace the pickup-time trigger to use app_settings.
 CREATE OR REPLACE FUNCTION public.enforce_pickup_time_validity()
@@ -58,10 +72,10 @@ BEGIN
       USING ERRCODE = 'check_violation';
   END IF;
 
-  tz := public.get_int_setting('store_timezone', 'America/New_York')::text;
-  open_min := public.get_int_setting('store_open_minute', 480);
-  close_min := public.get_int_setting('store_close_minute', 900);
-  max_days := public.get_int_setting('store_max_days_ahead', 14);
+  tz := public.get_setting_text('store_timezone', 'America/New_York');
+  open_min := public.get_setting_int('store_open_minute', 480);
+  close_min := public.get_setting_int('store_close_minute', 900);
+  max_days := public.get_setting_int('store_max_days_ahead', 14);
 
   -- Reject pickups too far in the future.
   IF NEW.pickup_time > now() + (max_days || ' days')::INTERVAL THEN

@@ -9,34 +9,39 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
+  bucket_name text;
   max_size bigint;
   allowed text[];
 BEGIN
+  SELECT name INTO bucket_name
+  FROM storage.buckets
+  WHERE id = NEW.bucket_id;
+
   -- Per-bucket limits.
-  IF NEW.bucket_id = 'products' THEN
+  IF bucket_name = 'products' THEN
     max_size := 5 * 1024 * 1024; -- 5 MB
     allowed := ARRAY['image/jpeg', 'image/png', 'image/webp'];
-  ELSIF NEW.bucket_id = 'users' THEN
+  ELSIF bucket_name = 'users' THEN
     max_size := 2 * 1024 * 1024; -- 2 MB
     allowed := ARRAY['image/jpeg', 'image/png', 'image/webp'];
-  ELSIF NEW.bucket_id = 'gallery' OR NEW.bucket_id = 'banners' THEN
+  ELSIF bucket_name IN ('gallery', 'banners') THEN
     max_size := 10 * 1024 * 1024; -- 10 MB
     allowed := ARRAY['image/jpeg', 'image/png', 'image/webp'];
   ELSE
-    -- Unknown bucket: allow but log nothing. Add explicit rules above as needed.
+    -- Unknown bucket: allow. Add explicit rules above as needed.
     RETURN NEW;
   END IF;
 
   IF NEW.size > max_size THEN
     RAISE EXCEPTION 'File too large for bucket %: % bytes exceeds % bytes',
-      NEW.bucket_id, NEW.size, max_size
+      bucket_name, NEW.size, max_size
       USING ERRCODE = 'check_violation';
   END IF;
 
   IF NEW.metadata->>'mimetype' IS NOT NULL
      AND NOT (NEW.metadata->>'mimetype' = ANY(allowed)) THEN
     RAISE EXCEPTION 'Disallowed file type for bucket %: %',
-      NEW.bucket_id, NEW.metadata->>'mimetype'
+      bucket_name, NEW.metadata->>'mimetype'
       USING ERRCODE = 'check_violation';
   END IF;
 

@@ -31,6 +31,18 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: "Accepted",
   declined: "Declined",
 };
+
+type Inquiry = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  event_type: string | null;
+  event_date: string | null;
+  guest_count: number | null;
+  message: string;
+  created_at: string;
+};
 const STATUS_BADGES: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   under_review: "bg-blue-100 text-blue-800",

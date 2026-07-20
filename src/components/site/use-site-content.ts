@@ -103,6 +103,7 @@ export function useSiteContent(): SiteContent {
           byId[r.section].items.push({
             id: r.id,
             name: r.name,
+            price_cents: r.price_cents ?? null,
             price: r.price ?? undefined,
             note: r.note ?? undefined,
             is_sold_out: !!r.is_sold_out,
@@ -111,6 +112,7 @@ export function useSiteContent(): SiteContent {
             discount_type: r.discount_type ?? null,
             discount_value: r.discount_value ?? null,
           });
+
         });
         menu = Object.values(byId).filter((s) => s.items.length > 0);
       }

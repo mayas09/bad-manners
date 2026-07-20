@@ -58,12 +58,20 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env.STRIPE_WEBHOOK_SECRET;
-        const apiKey = process.env.STRIPE_SECRET_KEY;
-        if (!secret || !apiKey) {
-          console.error("stripe-webhook: missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY");
+        let secret: string;
+        let apiKey: string;
+        try {
+          const env = (await import("@/lib/require-env")).requireEnv([
+            "STRIPE_WEBHOOK_SECRET",
+            "STRIPE_SECRET_KEY",
+          ] as const);
+          secret = env.STRIPE_WEBHOOK_SECRET;
+          apiKey = env.STRIPE_SECRET_KEY;
+        } catch (err) {
+          console.error("stripe-webhook:", err);
           return new Response("Server not configured", { status: 500 });
         }
+
 
         const signature = request.headers.get("stripe-signature");
         if (!signature) return new Response("Missing signature", { status: 400 });

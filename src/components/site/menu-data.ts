@@ -1,6 +1,18 @@
 export type MenuItem = {
   id?: string;
   name: string;
+  /**
+   * Current selling price in cents. This is the authoritative source for both
+   * on-screen display and checkout — the same column (`menu_items.price_cents`)
+   * that `createCheckoutSession` re-fetches on the server. When present, UI
+   * should format from this instead of the free-text `price` field.
+   */
+  price_cents?: number | null;
+  /**
+   * Free-text price label (e.g. "$4 / $5" for size variants, or a range that
+   * isn't sold online). Used only as a display fallback when `price_cents` is
+   * null — never as the checkout price.
+   */
   price?: string;
   note?: string;
   is_sold_out?: boolean;
@@ -10,6 +22,7 @@ export type MenuItem = {
   discount_type?: "percent" | "amount" | null;
   discount_value?: number | null;
 };
+
 export type MenuSection = {
   id: string;
   title: string;

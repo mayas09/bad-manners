@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireEnv } from "@/lib/require-env";
 import { z } from "zod";
+
 
 const CreateSchema = z.object({
   orderId: z.string().uuid(),
@@ -175,7 +177,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     };
 
     const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const stripe = new Stripe(requireEnv(["STRIPE_SECRET_KEY"] as const).STRIPE_SECRET_KEY);
 
     const coupon =
       serverDiscount > 0
@@ -226,7 +228,7 @@ export const finalizeOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const stripe = new Stripe(requireEnv(["STRIPE_SECRET_KEY"] as const).STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.retrieve(data.sessionId);
     if (session.metadata?.order_id !== data.orderId) {
       throw new Error("Session does not match this order");
@@ -324,7 +326,7 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
         throw new Error("Cannot refund paid order because the Stripe payment is missing");
       }
       const Stripe = (await import("stripe")).default;
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const stripe = new Stripe(requireEnv(["STRIPE_SECRET_KEY"] as const).STRIPE_SECRET_KEY);
       const refund = await stripe.refunds.create(
         {
           payment_intent: order.stripe_payment_intent,

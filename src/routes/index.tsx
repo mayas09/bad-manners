@@ -516,7 +516,11 @@ function MenuSection({
               )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.items.map((item, i) => {
-                  const cents = parsePriceToCents(item.price);
+                  // Unified price source: prefer `price_cents` (the same column
+                  // checkout re-fetches on the server); fall back to parsing the
+                  // free-text `price` label only when cents aren't set.
+                  const cents = item.price_cents ?? parsePriceToCents(item.price);
+                  const priceLabel = cents != null ? formatCents(cents) : (item.price ?? null);
                   const canOrder = !!cents && !item.is_sold_out;
                   const hasDiscount =
                     !!item.original_price_cents && !!cents && item.original_price_cents > cents;
@@ -551,7 +555,7 @@ function MenuSection({
                             </p>
                           )}
                         </div>
-                        {item.price && (
+                        {priceLabel && (
                           <div className="text-right whitespace-nowrap">
                             {hasDiscount && (
                               <div className="text-xs text-muted-foreground line-through">
@@ -561,7 +565,7 @@ function MenuSection({
                             <span
                               className={`font-display text-lg ${item.is_sold_out ? "line-through text-muted-foreground" : "text-fire"}`}
                             >
-                              {item.price}
+                              {priceLabel}
                             </span>
                           </div>
                         )}
@@ -570,6 +574,7 @@ function MenuSection({
                     </div>
                   );
                 })}
+
               </div>
               {s.footer && (
                 <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">

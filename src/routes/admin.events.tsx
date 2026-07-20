@@ -79,6 +79,11 @@ function AdminEventsPage() {
       }
       setCustomers(map);
     }
+    const { data: inq } = await supabase
+      .from("catering_inquiries")
+      .select("id,name,email,phone,event_type,event_date,guest_count,message,created_at")
+      .order("created_at", { ascending: false });
+    setInquiries((inq as Inquiry[]) ?? []);
     setLoading(false);
   }
 

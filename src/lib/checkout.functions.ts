@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireEnv } from "@/lib/require-env";
 import { z } from "zod";
+
 
 const CreateSchema = z.object({
   orderId: z.string().uuid(),

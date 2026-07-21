@@ -26,7 +26,7 @@ BEGIN
     PERFORM cron.schedule(
       'cleanup-old-analytics-events',
       '0 4 * * *',
-      $$ SELECT public.cleanup_old_analytics_events(); $$
+      'SELECT public.cleanup_old_analytics_events();'
     );
   END IF;
 END $$;

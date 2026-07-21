@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-r
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { createCheckoutSession } from "@/lib/checkout.functions";
+import { placePickupOrder } from "@/lib/pickup-order.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,6 +71,7 @@ function CheckoutPage() {
   const nav = useNavigate();
   const content = useSiteContent();
   const createSession = useServerFn(createCheckoutSession);
+  const submitPickupOrder = useServerFn(placePickupOrder);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -209,45 +210,24 @@ function CheckoutPage() {
         return;
       }
 
-      const { data: order, error } = await supabase
-        .from("orders")
-        .insert({
-          customer_id: auth.user.id,
-          customer_name: name.trim(),
-          customer_phone: phone.trim(),
-          customer_email: auth.user.email,
-          subtotal_cents: subtotal,
-          total_cents: total,
-          discount_cents: discountCents,
-          pickup_time: pickup,
-          order_notes: notes || null,
-          ...(paymentMethod === "pickup" ? { payment_status: "pay_on_pickup" as const } : {}),
-        })
-        .select("id")
-        .single();
-      if (error || !order) {
-        toast.error(error?.message || "Order failed");
-        return;
-      }
-
-      const { error: iErr } = await supabase
-        .from("order_items")
-        .insert(orderItems.map(({ id, ...it }) => ({ ...it, order_id: order.id })));
-      if (iErr) {
-        toast.error(iErr.message);
-        return;
-      }
-
-      if (redeeming) {
-        const { error: redeemErr } = await supabase
-          .from("profiles")
-          .update({ free_drinks_available: freeDrinksAvailable - 1 })
-          .eq("id", auth.user.id);
-        if (redeemErr) console.error("Failed to redeem free drink:", redeemErr.message);
-      }
+      const result = await submitPickupOrder({
+        data: {
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          customerEmail: auth.user.email ?? null,
+          subtotalCents: subtotal,
+          totalCents: total,
+          discountCents,
+          pickupTime: pickup,
+          orderNotes: notes || null,
+          paymentStatus: paymentMethod === "pickup" ? "pay_on_pickup" : "unpaid",
+          redeemFreeDrink: redeeming,
+          items: orderItems.map(({ id: _id, ...it }) => it),
+        },
+      });
 
       cart.clear();
-      nav({ to: "/order/$orderId", params: { orderId: order.id } });
+      nav({ to: "/order/$orderId", params: { orderId: result.orderId } });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {

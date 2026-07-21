@@ -56,7 +56,9 @@ export const placePickupOrder = createServerFn({ method: "POST" })
     });
 
     if (error) throw new Error(error.message);
-    const row = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    const row = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as
+      | { order_id: string; order_number: number }
+      | undefined;
     if (!row?.order_id) throw new Error("Order could not be created");
-    return { orderId: row.order_id as string, orderNumber: row.order_number as number };
+    return { orderId: row.order_id, orderNumber: row.order_number };
   });

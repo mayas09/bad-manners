@@ -38,7 +38,10 @@ export const placePickupOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
-    const { data: rpcData, error } = await supabase.rpc("place_pickup_order", {
+    const { data: rpcData, error } = await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>)("place_pickup_order", {
       p_customer_name: data.customerName,
       p_customer_phone: data.customerPhone,
       p_customer_email: data.customerEmail ?? null,

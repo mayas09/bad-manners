@@ -1,10 +1,9 @@
 -- Prevent client-side spoofing of analytics_events:
---   * Force user_id = auth.uid() (or NULL for anon).
+--   * Force customer_id = auth.uid() (or NULL for anon).
 --   * Reject event_type values outside a known whitelist.
---   * Cap payload size and rate.
--- Admins/service_role bypass.
+--   * Rate-limit inserts per user.
+-- Admins bypass.
 
--- 1. Trigger that overwrites user_id from JWT and validates event_type.
 CREATE OR REPLACE FUNCTION public.sanitize_analytics_event()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -24,21 +23,17 @@ BEGIN
   END IF;
 
   IF NOT is_admin THEN
-    -- Force user_id to match the caller.
-    NEW.user_id := auth.uid();
+    -- Force customer_id to match the caller (NULL for anon).
+    NEW.customer_id := auth.uid();
 
     IF NEW.event_type IS NULL OR NOT (NEW.event_type = ANY (allowed_types)) THEN
       RAISE EXCEPTION 'Invalid analytics event_type: %', NEW.event_type;
     END IF;
 
-    IF NEW.payload IS NOT NULL AND octet_length(NEW.payload::text) > 4096 THEN
-      RAISE EXCEPTION 'Analytics payload too large (max 4KB)';
-    END IF;
-
     -- Simple rate limit: max 60 events per user per minute.
-    IF NEW.user_id IS NOT NULL THEN
+    IF NEW.customer_id IS NOT NULL THEN
       IF (SELECT count(*) FROM public.analytics_events
-          WHERE user_id = NEW.user_id
+          WHERE customer_id = NEW.customer_id
             AND created_at > now() - INTERVAL '1 minute') >= 60 THEN
         RAISE EXCEPTION 'Analytics rate limit exceeded';
       END IF;
@@ -57,6 +52,5 @@ CREATE TRIGGER trg_sanitize_analytics_event
   FOR EACH ROW
   EXECUTE FUNCTION public.sanitize_analytics_event();
 
--- 2. Index for the rate-limit lookup.
-CREATE INDEX IF NOT EXISTS analytics_events_user_recent_idx
-  ON public.analytics_events (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS analytics_events_customer_recent_idx
+  ON public.analytics_events (customer_id, created_at DESC);

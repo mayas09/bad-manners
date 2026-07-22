@@ -136,7 +136,7 @@ function MenuPage() {
       return;
     }
     setSectionsAvailable(true);
-    const list = ((data ?? []) as SectionRow[]).sort((a, b) => a.sort_order - b.sort_order);
+    const list = ((data ?? []) as unknown as SectionRow[]).sort((a, b) => a.sort_order - b.sort_order);
     setSections(list.length ? list : DEFAULT_SECTIONS);
   }
 

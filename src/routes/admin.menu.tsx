@@ -455,22 +455,32 @@ function SectionEditor({
       compressed = file;
     }
     const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `products/menu/${r.id}/${Date.now()}-${safeName}`;
+    // Path is relative to the bucket root — do NOT re-prefix with the bucket name.
+    const path = `menu/${r.id}/${Date.now()}-${safeName}`;
     const up = await supabase.storage
       .from(MENU_IMAGE_BUCKET)
       .upload(path, compressed, { upsert: true, contentType: compressed.type });
-    if (up.error) return toast.error(up.error.message);
-    const signed = await supabase.storage
-      .from(MENU_IMAGE_BUCKET)
-      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-    if (signed.error || !signed.data)
-      return toast.error(signed.error?.message ?? "Failed to sign URL");
-    const url = signed.data.signedUrl;
+    if (up.error) {
+      console.error("[uploadImage] storage upload failed", up.error);
+      return toast.error(`Upload failed: ${up.error.message}`);
+    }
+    // Products bucket is public — use the stable public URL rather than a signed URL
+    // (multi-year signed URLs are rejected by some Storage backends).
+    const { data: pub } = supabase.storage.from(MENU_IMAGE_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl;
+    if (!url) return toast.error("Failed to resolve public URL for uploaded image");
     updateLocal(r.id, { image_url: url });
-    const { error } = await supabase.from("menu_items").update({ image_url: url }).eq("id", r.id);
-    if (error) return toast.error(error.message);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ image_url: url })
+      .eq("id", r.id);
+    if (error) {
+      console.error("[uploadImage] menu_items update failed", error);
+      return toast.error(`Saved file but couldn't update menu item: ${error.message}`);
+    }
     toast.success("Image uploaded");
   }
+
 
   async function removeImage(r: MenuRow) {
     if (!r.image_url) return;

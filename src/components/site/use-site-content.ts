@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MENU as FALLBACK_MENU, type MenuSection } from "@/components/site/menu-data";
 import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
+import { getSiteDateParts } from "@/lib/time-utils";
 
 export type SiteContent = {
   menu: MenuSection[];

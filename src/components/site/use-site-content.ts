@@ -78,11 +78,12 @@ export function useSiteContent(): SiteContent {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [m, i, h, img] = await Promise.all([
+      const [m, i, h, img, secRes] = await Promise.all([
         supabase.from("menu_items").select("*").order("section").order("sort_order"),
         supabase.from("business_info").select("*"),
         supabase.from("business_hours").select("*").order("sort_order"),
         supabase.from("site_images").select("*").order("category").order("sort_order"),
+        supabase.from("menu_sections" as any).select("*").order("sort_order"),
       ]);
       if (cancelled) return;
 
@@ -98,21 +99,41 @@ export function useSiteContent(): SiteContent {
         return;
       }
 
+      // Section metadata — prefer DB, fall back to defaults.
+      const dbSections = (secRes && !secRes.error ? (secRes.data as any[]) : null) ?? [];
+      const sectionMeta: Record<string, { title: string; blurb?: string; sort_order: number; footer?: MenuSection["footer"] }> = {};
+      Object.keys(SECTION_META).forEach((slug, idx) => {
+        sectionMeta[slug] = {
+          title: SECTION_META[slug].title,
+          blurb: SECTION_META[slug].blurb,
+          footer: SECTION_META[slug].footer,
+          sort_order: idx + 1,
+        };
+      });
+      dbSections.forEach((s) => {
+        sectionMeta[s.slug] = {
+          title: s.title,
+          blurb: s.blurb ?? undefined,
+          footer: SECTION_META[s.slug]?.footer,
+          sort_order: s.sort_order ?? 999,
+        };
+      });
+
       // Menu
       let menu: MenuSection[] = FALLBACK_MENU;
       if (m.data && m.data.length) {
         const byId: Record<string, MenuSection> = {};
-        for (const id of Object.keys(SECTION_META)) {
-          byId[id] = {
-            id,
-            title: SECTION_META[id].title,
-            blurb: SECTION_META[id].blurb,
-            items: [],
-            footer: SECTION_META[id].footer,
-          };
-        }
         m.data.forEach((r: any) => {
-          if (!byId[r.section]) byId[r.section] = { id: r.section, title: r.section, items: [] };
+          if (!byId[r.section]) {
+            const meta = sectionMeta[r.section];
+            byId[r.section] = {
+              id: r.section,
+              title: meta?.title ?? r.section,
+              blurb: meta?.blurb,
+              items: [],
+              footer: meta?.footer,
+            };
+          }
           byId[r.section].items.push({
             id: r.id,
             name: r.name,
@@ -125,10 +146,12 @@ export function useSiteContent(): SiteContent {
             discount_type: r.discount_type ?? null,
             discount_value: r.discount_value ?? null,
           });
-
         });
-        menu = Object.values(byId).filter((s) => s.items.length > 0);
+        menu = Object.values(byId)
+          .filter((s) => s.items.length > 0)
+          .sort((a, b) => (sectionMeta[a.id]?.sort_order ?? 999) - (sectionMeta[b.id]?.sort_order ?? 999));
       }
+
 
       // Info
       const info = { ...FALLBACK_INFO };

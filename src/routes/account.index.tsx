@@ -214,7 +214,7 @@ function AccountHome() {
         <section className="flex flex-wrap gap-3">
           <Link
             to="/account/events"
-            className="inline-flex items-center gap-2 rounded-full bg-[--pink-deep] text-white px-4 py-2 text-sm font-semibold hover:opacity-95"
+            className="inline-flex items-center gap-2 rounded-full bg-fire text-white px-4 py-2 text-sm font-semibold shadow-sm hover:opacity-95"
           >
             Catering & Events →
           </Link>

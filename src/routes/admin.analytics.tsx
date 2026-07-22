@@ -374,10 +374,16 @@ function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
                 <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <Tooltip />
+                <Tooltip
+                  formatter={(value: number, id: string) => [
+                    value,
+                    menu.find((m) => m.id === id)?.name ?? id,
+                  ]}
+                />
                 <Legend
                   formatter={(id) => menu.find((m) => m.id === id)?.name ?? id}
                 />
+
                 {selectedItems.map((id, i) => (
                   <Line
                     key={id}

@@ -20,17 +20,25 @@ declare global {
 
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
-  window.__lovableEvents?.captureException?.(
-    error,
-    {
-      source: "react_error_boundary",
+  const capture = window.__lovableEvents?.captureException;
+  if (typeof capture === "function") {
+    capture(
+      error,
+      {
+        source: "react_error_boundary",
+        route: window.location.pathname,
+        ...context,
+      },
+      {
+        mechanism: "react_error_boundary",
+        handled: false,
+        severity: "error",
+      },
+    );
+  } else {
+    console.error("[error-boundary]", error, {
       route: window.location.pathname,
       ...context,
-    },
-    {
-      mechanism: "react_error_boundary",
-      handled: false,
-      severity: "error",
-    },
-  );
+    });
+  }
 }

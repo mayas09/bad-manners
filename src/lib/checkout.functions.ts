@@ -304,8 +304,12 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => CancelOrderSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: role } = await supabase
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verify admin via service-role client so the check can't be spoofed
+    // by an RLS misconfiguration on `user_roles`.
+    const { data: role } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
@@ -313,7 +317,6 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!role) throw new Error("Unauthorized");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
       .select(
@@ -364,11 +367,19 @@ export const cancelOrderWithRefund = createServerFn({ method: "POST" })
       update.refunded_at = new Date().toISOString();
     }
 
-    const { error: updateErr } = await supabaseAdmin
+    // Race guard: only cancel if the order is still not cancelled. If a
+    // concurrent admin cancelled it first, `.select()` returns 0 rows and
+    // we bail out before double-notifying the customer.
+    const { data: updated, error: updateErr } = await supabaseAdmin
       .from("orders")
       .update(update)
-      .eq("id", order.id);
+      .eq("id", order.id)
+      .neq("status", "cancelled")
+      .select("id");
     if (updateErr) throw new Error(`Failed to cancel order: ${updateErr.message}`);
+    if (!updated || updated.length === 0) {
+      return { cancelled: true, refunded: false };
+    }
 
     const refundCopy = refundId
       ? " A full refund has been issued to your original payment method."

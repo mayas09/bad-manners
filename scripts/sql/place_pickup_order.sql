@@ -146,7 +146,7 @@ begin
   ) values (
     v_uid, p_customer_name, p_customer_phone, p_customer_email,
     p_subtotal_cents, p_total_cents, p_discount_cents,
-    p_pickup_time, nullif(p_order_notes, ''),
+    p_pickup_time::timestamptz, nullif(p_order_notes, ''),
     p_payment_status, 'pending'
   )
   returning id, order_number into v_order_id, v_order_number;

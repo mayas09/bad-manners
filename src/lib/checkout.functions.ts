@@ -189,25 +189,43 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
           })
         : null;
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: verifiedItems.map((it) => ({
-        price_data: {
-          currency: "usd",
-          product_data: { name: it.name },
-          unit_amount: it.unit_price_cents,
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: verifiedItems.map((it) => ({
+            price_data: {
+              currency: "usd",
+              product_data: { name: it.name },
+              unit_amount: it.unit_price_cents,
+            },
+            quantity: it.quantity,
+          })),
+          discounts: coupon ? [{ coupon: coupon.id }] : [],
+          success_url: `${data.originUrl}/order/${data.orderId}?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${data.originUrl}/checkout?cancelled=1`,
+          metadata: {
+            ...packOrderMetadata(verifiedPayload),
+            customer_id: userId,
+          },
         },
-        quantity: it.quantity,
-      })),
-      discounts: coupon ? [{ coupon: coupon.id }] : [],
-      success_url: `${data.originUrl}/order/${data.orderId}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${data.originUrl}/checkout?cancelled=1`,
-      metadata: {
-        ...packOrderMetadata(verifiedPayload),
-        customer_id: userId,
-      },
-    });
+        // Stable idempotency key — repeated identical requests for the same
+        // orderId return the same session instead of creating duplicates.
+        { idempotencyKey: `checkout-session-${data.orderId}` },
+      );
+    } finally {
+      // Coupon is single-use and attached to the session; delete after use
+      // to keep the Stripe dashboard clean. Failure here must not fail checkout.
+      if (coupon) {
+        try {
+          await stripe.coupons.del(coupon.id);
+        } catch (err) {
+          console.warn("[stripe] failed to delete coupon", coupon.id, err);
+        }
+      }
+    }
 
     return { url: session.url };
   });

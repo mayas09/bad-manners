@@ -1,6 +1,6 @@
 -- H3 fix (pay-on-pickup path): atomic order + items + optional reward redemption.
--- Called from a server function running with the caller's Supabase session,
--- so we re-verify the customer_id against auth.uid() inside the function.
+-- Defense-in-depth: recomputes subtotal/total from menu_items and rejects
+-- mismatches, so even a compromised server function cannot forge prices.
 -- Run this in the Supabase SQL Editor.
 
 create or replace function public.place_pickup_order(
@@ -26,6 +26,13 @@ declare
   v_order_id uuid;
   v_order_number bigint;
   v_available integer;
+  v_computed_subtotal integer := 0;
+  v_computed_discount integer := 0;
+  v_cheapest integer;
+  v_item jsonb;
+  v_menu record;
+  v_qty integer;
+  v_mid uuid;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
@@ -40,6 +47,59 @@ begin
     raise exception 'Order must contain at least one item';
   end if;
 
+  -- === Defense-in-depth: recompute subtotal from menu_items ===
+  -- Items priced at 0 (free-drink split line) are trusted as-is but do not
+  -- contribute to the computed subtotal; the paid portion must match menu prices.
+  for v_item in select * from jsonb_array_elements(p_items)
+  loop
+    v_qty := (v_item->>'quantity')::int;
+    if v_qty is null or v_qty <= 0 then
+      raise exception 'Invalid item quantity';
+    end if;
+
+    if (v_item->>'menu_item_id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      v_mid := (v_item->>'menu_item_id')::uuid;
+    else
+      v_mid := null;
+    end if;
+
+    -- Free-drink split line: allowed at 0 cents without menu lookup.
+    if coalesce((v_item->>'unit_price_cents')::int, 0) = 0 then
+      continue;
+    end if;
+
+    if v_mid is null then
+      raise exception 'Item missing menu_item_id';
+    end if;
+
+    select id, name, price_cents, coalesce(is_sold_out, false) as sold_out
+      into v_menu
+      from public.menu_items
+      where id = v_mid;
+
+    if v_menu is null then
+      raise exception 'Item no longer on the menu';
+    end if;
+    if v_menu.sold_out then
+      raise exception 'Sold out: %', v_menu.name;
+    end if;
+    if v_menu.price_cents is null or v_menu.price_cents <= 0 then
+      raise exception 'Item cannot be ordered online: %', v_menu.name;
+    end if;
+    if v_menu.price_cents <> (v_item->>'unit_price_cents')::int then
+      raise exception 'Price mismatch for %: expected %, got %',
+        v_menu.name, v_menu.price_cents, (v_item->>'unit_price_cents')::int;
+    end if;
+
+    v_computed_subtotal := v_computed_subtotal + v_qty * v_menu.price_cents;
+  end loop;
+
+  if v_computed_subtotal <> coalesce(p_subtotal_cents, -1) then
+    raise exception 'Subtotal mismatch: computed %, got %',
+      v_computed_subtotal, p_subtotal_cents;
+  end if;
+
+  -- === Redeem free drink (atomically decrement balance) ===
   if p_redeem_free_drink then
     update public.profiles
       set free_drinks_available = free_drinks_available - 1
@@ -50,6 +110,32 @@ begin
     if v_available is null then
       raise exception 'No free drink available to redeem';
     end if;
+
+    -- Discount must equal the cheapest priced item on the order.
+    select min(price_cents) into v_cheapest
+      from public.menu_items
+      where id in (
+        select case
+          when (elem->>'menu_item_id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          then (elem->>'menu_item_id')::uuid
+          else null
+        end
+        from jsonb_array_elements(p_items) as elem
+        where coalesce((elem->>'unit_price_cents')::int, 0) > 0
+      )
+      and price_cents > 0;
+
+    v_computed_discount := coalesce(v_cheapest, 0);
+  end if;
+
+  if v_computed_discount <> coalesce(p_discount_cents, 0) then
+    raise exception 'Discount mismatch: computed %, got %',
+      v_computed_discount, p_discount_cents;
+  end if;
+
+  if greatest(v_computed_subtotal - v_computed_discount, 0) <> coalesce(p_total_cents, -1) then
+    raise exception 'Total mismatch: computed %, got %',
+      greatest(v_computed_subtotal - v_computed_discount, 0), p_total_cents;
   end if;
 
   insert into public.orders (

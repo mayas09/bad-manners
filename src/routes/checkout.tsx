@@ -146,43 +146,7 @@ function CheckoutPage() {
     setBusy(true);
     try {
       const subtotal = cart.subtotalCents;
-      const redeeming = discountCents > 0;
       const total = discountedTotalCents;
-      const orderItems = cart.items.flatMap((it) => {
-        const menu_item_id = it.id.startsWith("menu:") ? it.id.slice(5) : null;
-        if (redeeming && cheapestItem && it.id === cheapestItem.id) {
-          const rows = [];
-          if (it.quantity > 1) {
-            rows.push({
-              menu_item_id,
-              id: it.id,
-              name: it.name,
-              quantity: it.quantity - 1,
-              unit_price_cents: it.unit_price_cents,
-              special_notes: it.special_notes || null,
-            });
-          }
-          rows.push({
-            menu_item_id,
-            id: it.id,
-            name: it.name,
-            quantity: 1,
-            unit_price_cents: 0,
-            special_notes: it.special_notes || null,
-          });
-          return rows;
-        }
-        return [
-          {
-            menu_item_id,
-            id: it.id,
-            name: it.name,
-            quantity: it.quantity,
-            unit_price_cents: it.unit_price_cents,
-            special_notes: it.special_notes || null,
-          },
-        ];
-      });
 
       if (paymentMethod === "stripe") {
         const orderId = crypto.randomUUID();
@@ -210,19 +174,35 @@ function CheckoutPage() {
         return;
       }
 
+      // Pay-on-pickup: send only identifiers + quantities. The server
+      // recomputes prices, totals, and any free-drink discount from the DB.
+      const pickupItems = cart.items
+        .map((it) => {
+          const menu_item_id = it.id.startsWith("menu:") ? it.id.slice(5) : it.id;
+          return {
+            menu_item_id,
+            quantity: it.quantity,
+            special_notes: it.special_notes || null,
+          };
+        })
+        .filter((it) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(it.menu_item_id),
+        );
+
+      if (pickupItems.length !== cart.items.length) {
+        throw new Error("Cart contains an item that isn't on the menu");
+      }
+
       const result = await submitPickupOrder({
         data: {
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerEmail: auth.user.email ?? null,
-          subtotalCents: subtotal,
-          totalCents: total,
-          discountCents,
           pickupTime: pickup,
           orderNotes: notes || null,
           paymentStatus: paymentMethod === "pickup" ? "pay_on_pickup" : "unpaid",
-          redeemFreeDrink: redeeming,
-          items: orderItems.map(({ id: _id, ...it }) => it),
+          redeemFreeDrink: discountCents > 0,
+          items: pickupItems,
         },
       });
 

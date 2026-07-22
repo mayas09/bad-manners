@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MENU as FALLBACK_MENU, type MenuSection } from "@/components/site/menu-data";
 import { PHOTOS as FALLBACK_PHOTOS } from "@/components/site/photos";
+import { getSiteDateParts } from "@/lib/time-utils";
 
 export type SiteContent = {
   menu: MenuSection[];
@@ -85,6 +86,18 @@ export function useSiteContent(): SiteContent {
       ]);
       if (cancelled) return;
 
+      if (m.error || i.error || h.error || img.error) {
+        console.error(
+          "Site content load error:",
+          m.error,
+          i.error,
+          h.error,
+          img.error,
+        );
+        setState((s) => ({ ...s, loaded: false }));
+        return;
+      }
+
       // Menu
       let menu: MenuSection[] = FALLBACK_MENU;
       if (m.data && m.data.length) {
@@ -129,9 +142,10 @@ export function useSiteContent(): SiteContent {
           ? h.data.map((r: any) => ({ label: r.label, hours_text: r.hours_text }))
           : FALLBACK_HOURS;
 
-      // Images
+      // Images — use the site (America/New_York) month so seasonal galleries
+      // don't flip based on the visitor's timezone.
       const photos = { ...FALLBACK_PHOTOS };
-      const month = new Date().getMonth() + 1;
+      const { month } = getSiteDateParts(new Date());
       const season = currentSeason(month);
       const imageRows = (img.data ?? []) as SiteImageRow[];
       const allGalleryRows = imageRows
@@ -142,7 +156,9 @@ export function useSiteContent(): SiteContent {
         return rowMonth === month || r.season_tag === season;
       });
       const defaultRows = allGalleryRows.filter((r) => !r.month_tag && !r.season_tag);
-      const galleryRows = themedRows.length >= 6 ? themedRows : defaultRows;
+      // Show themed images first, top up with defaults, cap at 6.
+      const galleryRows =
+        themedRows.length > 0 ? [...themedRows, ...defaultRows].slice(0, 6) : defaultRows;
       if (galleryRows.length) photos.gallery = galleryRows.map((r) => r.url);
       imageRows.forEach((r) => {
         if (r.key === "hero_interior") photos.heroInterior = r.url;

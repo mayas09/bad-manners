@@ -1,17 +1,15 @@
--- M-fix: enforce product/user image upload limits in Supabase Storage.
--- Blocks oversized files and disallowed content types at the database level.
--- Apply once in the Supabase SQL editor.
+-- Fix product/gallery/banner upload failures that appear as:
+-- "Database schema is out of sync. Please run migrations or contact support."
 --
--- 2026-07-22 fix: storage.objects does not expose a top-level NEW.size field
--- on every Supabase Storage version. Size and mimetype are stored in metadata.
--- Referencing NEW.size makes uploads fail after the transfer completes with a
--- generic "Database schema is out of sync" Storage error.
+-- Root cause: an older storage trigger referenced NEW.size, but modern
+-- Supabase Storage stores file size and mimetype inside storage.objects.metadata.
+-- Run this once in the Supabase SQL Editor.
 
 CREATE OR REPLACE FUNCTION public.enforce_storage_object_limits()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, storage
 AS $$
 DECLARE
   bucket_name text;
@@ -30,7 +28,6 @@ BEGIN
 
   bucket_name := COALESCE(bucket_name, NEW.bucket_id);
 
-  -- Per-bucket limits.
   IF bucket_name = 'products' THEN
     max_size := 5 * 1024 * 1024; -- 5 MB
     allowed := ARRAY['image/jpeg', 'image/png', 'image/webp'];
@@ -41,7 +38,6 @@ BEGIN
     max_size := 10 * 1024 * 1024; -- 10 MB
     allowed := ARRAY['image/jpeg', 'image/png', 'image/webp'];
   ELSE
-    -- Unknown bucket: allow. Add explicit rules above as needed.
     RETURN NEW;
   END IF;
 
@@ -74,4 +70,5 @@ CREATE TRIGGER enforce_storage_object_limits_insert
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_storage_object_limits();
 
+-- Refresh PostgREST's cache for recent menu/site image column changes too.
 NOTIFY pgrst, 'reload schema';

@@ -73,6 +73,31 @@ type MenuRow = {
 
 const MENU_IMAGE_BUCKET = "products";
 
+function formatSupabaseError(error: unknown) {
+  if (!error || typeof error !== "object") return "Unknown error";
+  const e = error as {
+    message?: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+    statusCode?: string | number;
+  };
+  return [
+    e.message,
+    e.code ? `code: ${e.code}` : null,
+    e.details ? `details: ${e.details}` : null,
+    e.hint ? `hint: ${e.hint}` : null,
+    e.statusCode ? `status: ${e.statusCode}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function isSchemaOutOfSyncError(error: unknown) {
+  const text = formatSupabaseError(error).toLowerCase();
+  return text.includes("schema") || text.includes("column") || text.includes("migration");
+}
+
 function formatCentsShort(c: number) {
   return `$${(c / 100).toFixed(2)}`;
 }
@@ -462,22 +487,33 @@ function SectionEditor({
       .upload(path, compressed, { upsert: true, contentType: compressed.type });
     if (up.error) {
       console.error("[uploadImage] storage upload failed", up.error);
-      return toast.error(`Upload failed: ${up.error.message}`);
+      const detail = formatSupabaseError(up.error);
+      return toast.error(
+        isSchemaOutOfSyncError(up.error)
+          ? `Storage schema trigger failed. Run scripts/sql/fix_storage_limits_trigger.sql, then retry. ${detail}`
+          : `Upload failed: ${detail}`,
+      );
     }
     // Products bucket is public — use the stable public URL rather than a signed URL
     // (multi-year signed URLs are rejected by some Storage backends).
     const { data: pub } = supabase.storage.from(MENU_IMAGE_BUCKET).getPublicUrl(path);
     const url = pub?.publicUrl;
     if (!url) return toast.error("Failed to resolve public URL for uploaded image");
-    updateLocal(r.id, { image_url: url });
     const { error } = await supabase
       .from("menu_items")
       .update({ image_url: url })
       .eq("id", r.id);
     if (error) {
       console.error("[uploadImage] menu_items update failed", error);
-      return toast.error(`Saved file but couldn't update menu item: ${error.message}`);
+      await supabase.storage.from(MENU_IMAGE_BUCKET).remove([path]).catch(() => {});
+      const detail = formatSupabaseError(error);
+      return toast.error(
+        isSchemaOutOfSyncError(error)
+          ? `menu_items.image_url update failed because Supabase schema cache is stale. Run scripts/sql/fix_storage_limits_trigger.sql, then retry. ${detail}`
+          : `Saved file but couldn't update menu item: ${detail}`,
+      );
     }
+    updateLocal(r.id, { image_url: url });
     toast.success("Image uploaded");
   }
 

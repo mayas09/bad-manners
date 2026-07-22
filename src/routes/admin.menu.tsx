@@ -7,7 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, GripVertical, Upload, ImageOff } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  GripVertical,
+  Upload,
+  ImageOff,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 import imageCompression from "browser-image-compression";
 import {
   DndContext,
@@ -31,12 +41,20 @@ export const Route = createFileRoute("/admin/menu")({
   component: MenuPage,
 });
 
-const SECTIONS = [
-  { id: "coffee", label: "Coffee" },
-  { id: "non-coffee", label: "Non-Coffee" },
-  { id: "tea", label: "Tea" },
-  { id: "seasonal", label: "Seasonal" },
+const DEFAULT_SECTIONS: SectionRow[] = [
+  { id: "coffee", slug: "coffee", title: "Coffee", blurb: null, sort_order: 1 },
+  { id: "non-coffee", slug: "non-coffee", title: "Non-Coffee", blurb: null, sort_order: 2 },
+  { id: "tea", slug: "tea", title: "Tea", blurb: null, sort_order: 3 },
+  { id: "seasonal", slug: "seasonal", title: "Seasonal", blurb: null, sort_order: 4 },
 ];
+
+type SectionRow = {
+  id: string;
+  slug: string;
+  title: string;
+  blurb: string | null;
+  sort_order: number;
+};
 
 type MenuRow = {
   id: string;
@@ -59,7 +77,15 @@ function formatCentsShort(c: number) {
   return `$${(c / 100).toFixed(2)}`;
 }
 
-/** Compute customer-facing price string from original + discount. Returns null if no discount. */
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
 function computeDiscountedPrice(row: {
   original_price_cents: number | null;
   discount_type: "percent" | "amount" | null;
@@ -91,54 +117,239 @@ function computePriceCents(row: {
 }
 
 function MenuPage() {
+  const [sections, setSections] = useState<SectionRow[]>([]);
+  const [sectionsAvailable, setSectionsAvailable] = useState(true);
   const [rows, setRows] = useState<MenuRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
+  async function loadSections() {
+    // menu_sections is optional — if the table isn't in the DB yet we fall back
+    // to the built-in section list so the page still works.
+    const { data, error } = await supabase
+      .from("menu_sections" as any)
+      .select("*")
+      .order("sort_order");
+    if (error) {
+      setSectionsAvailable(false);
+      setSections(DEFAULT_SECTIONS);
+      return;
+    }
+    setSectionsAvailable(true);
+    const list = ((data ?? []) as SectionRow[]).sort((a, b) => a.sort_order - b.sort_order);
+    setSections(list.length ? list : DEFAULT_SECTIONS);
+  }
+
+  async function loadRows() {
     const { data } = await supabase
       .from("menu_items")
       .select("*")
       .order("section")
       .order("sort_order");
     setRows((data ?? []) as MenuRow[]);
+  }
+
+  async function loadAll() {
+    setLoading(true);
+    await Promise.all([loadSections(), loadRows()]);
     setLoading(false);
   }
   useEffect(() => {
-    load();
+    loadAll();
   }, []);
+
+  useEffect(() => {
+    if (!active && sections.length) setActive(sections[0].slug);
+    if (active && !sections.some((s) => s.slug === active) && sections.length) {
+      setActive(sections[0].slug);
+    }
+  }, [sections, active]);
+
+  async function addSection() {
+    if (!sectionsAvailable) {
+      toast.error(
+        "Run scripts/sql/menu_sections_and_site_images_columns.sql in Supabase to enable custom sections.",
+      );
+      return;
+    }
+    const title = prompt("New section name (e.g. Pastries)");
+    if (!title) return;
+    const slug = slugify(title);
+    if (!slug) return toast.error("Invalid name");
+    if (sections.some((s) => s.slug === slug)) return toast.error("A section with that slug already exists");
+    const nextOrder = sections.reduce((m, s) => Math.max(m, s.sort_order), 0) + 1;
+    const { error } = await supabase
+      .from("menu_sections" as any)
+      .insert({ slug, title, blurb: null, sort_order: nextOrder });
+    if (error) return toast.error(error.message);
+    toast.success("Section added");
+    await loadSections();
+    setActive(slug);
+  }
+
+  async function renameSection(s: SectionRow, next: { title: string; blurb: string | null }) {
+    if (!sectionsAvailable) return;
+    const { error } = await supabase
+      .from("menu_sections" as any)
+      .update({ title: next.title, blurb: next.blurb })
+      .eq("id", s.id);
+    if (error) return toast.error(error.message);
+    setSections((cur) => cur.map((x) => (x.id === s.id ? { ...x, ...next } : x)));
+    toast.success("Section updated");
+  }
+
+  async function deleteSection(s: SectionRow) {
+    if (!sectionsAvailable) return;
+    const itemsHere = rows.filter((r) => r.section === s.slug).length;
+    if (itemsHere > 0) {
+      toast.error(`Move or delete the ${itemsHere} item(s) in this section first.`);
+      return;
+    }
+    if (!confirm(`Delete section "${s.title}"?`)) return;
+    const { error } = await supabase.from("menu_sections" as any).delete().eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Section deleted");
+    await loadSections();
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Menu</h1>
-        <p className="text-sm text-slate-500">
-          Drag to reorder. Toggle "Sold Out" to keep an item listed but mark it unavailable.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Menu</h1>
+          <p className="text-sm text-slate-500">
+            Drag to reorder. Toggle "Sold Out" to keep an item listed but mark it unavailable.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={addSection}>
+          <Plus className="size-4 mr-1" /> Add section
+        </Button>
       </div>
-      {loading ? (
+
+      {!sectionsAvailable && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Custom sections aren't set up yet. Run{" "}
+          <code className="font-mono">scripts/sql/menu_sections_and_site_images_columns.sql</code>{" "}
+          in Supabase to rename or add sections.
+        </div>
+      )}
+
+      {loading || !active ? (
         <p className="text-sm text-slate-500">Loading…</p>
       ) : (
-        <Tabs defaultValue="coffee">
-          <TabsList>
-            {SECTIONS.map((s) => (
-              <TabsTrigger key={s.id} value={s.id}>
-                {s.label}
+        <Tabs value={active} onValueChange={setActive}>
+          <TabsList className="flex-wrap h-auto">
+            {sections.map((s) => (
+              <TabsTrigger key={s.slug} value={s.slug}>
+                {s.title}
               </TabsTrigger>
             ))}
           </TabsList>
-          {SECTIONS.map((sec) => (
-            <TabsContent key={sec.id} value={sec.id} className="mt-4">
+          {sections.map((sec) => (
+            <TabsContent key={sec.slug} value={sec.slug} className="mt-4 space-y-4">
+              {sectionsAvailable && (
+                <SectionHeader
+                  section={sec}
+                  onSave={(patch) => renameSection(sec, patch)}
+                  onDelete={() => deleteSection(sec)}
+                  canDelete={rows.filter((r) => r.section === sec.slug).length === 0}
+                />
+              )}
               <SectionEditor
-                section={sec.id}
-                rows={rows.filter((r) => r.section === sec.id)}
+                section={sec.slug}
+                rows={rows.filter((r) => r.section === sec.slug)}
                 onChange={setRows}
-                reload={load}
+                reload={loadRows}
               />
             </TabsContent>
           ))}
         </Tabs>
       )}
+    </div>
+  );
+}
+
+function SectionHeader({
+  section,
+  onSave,
+  onDelete,
+  canDelete,
+}: {
+  section: SectionRow;
+  onSave: (patch: { title: string; blurb: string | null }) => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(section.title);
+  const [blurb, setBlurb] = useState(section.blurb ?? "");
+
+  useEffect(() => {
+    setTitle(section.title);
+    setBlurb(section.blurb ?? "");
+  }, [section.id, section.title, section.blurb]);
+
+  if (!editing) {
+    return (
+      <div className="flex items-start justify-between gap-3 bg-white rounded-2xl border border-slate-200 p-4">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-slate-500">Section</p>
+          <p className="text-lg font-semibold text-slate-900">{section.title}</p>
+          {section.blurb && <p className="text-sm text-slate-500">{section.blurb}</p>}
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            <Pencil className="size-3.5 mr-1" /> Rename
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onDelete}
+            disabled={!canDelete}
+            title={canDelete ? "Delete section" : "Move items out first"}
+          >
+            <Trash2 className="size-3.5 text-red-500" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+      <Input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Section title"
+      />
+      <Textarea
+        rows={2}
+        value={blurb}
+        onChange={(e) => setBlurb(e.target.value)}
+        placeholder="Optional blurb shown under the section title"
+      />
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setEditing(false);
+            setTitle(section.title);
+            setBlurb(section.blurb ?? "");
+          }}
+        >
+          <X className="size-3.5 mr-1" /> Cancel
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            onSave({ title: title.trim() || section.title, blurb: blurb.trim() || null });
+            setEditing(false);
+          }}
+        >
+          <Check className="size-3.5 mr-1" /> Save
+        </Button>
+      </div>
     </div>
   );
 }
@@ -174,7 +385,6 @@ function SectionEditor({
     reload();
   }
   async function saveRow(r: MenuRow) {
-    // If discount is set, recompute the customer-facing price string.
     let priceToSave = r.price;
     const originalCents = r.original_price_cents;
     const discountInput = {
@@ -276,13 +486,11 @@ function SectionEditor({
     const oldIndex = rows.findIndex((r) => r.id === active.id);
     const newIndex = rows.findIndex((r) => r.id === over.id);
     const reordered = arrayMove(rows, oldIndex, newIndex);
-    // Re-sort
     const updates = reordered.map((r, i) => ({ ...r, sort_order: i + 1 }));
     onChange((rs) => {
       const others = rs.filter((x) => x.section !== section);
       return [...others, ...updates];
     });
-    // Persist
     const results = await Promise.all(
       updates.map((r) =>
         supabase.from("menu_items").update({ sort_order: r.sort_order }).eq("id", r.id),

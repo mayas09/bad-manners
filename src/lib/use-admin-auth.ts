@@ -66,10 +66,13 @@ export function useAdminAuth(): AdminAuthState {
       /* localStorage unavailable (e.g. private browsing) */
     }
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) markActivity();
-      load(data.user?.id ?? null, data.user?.email ?? null);
+    // Fast path: use cached session (from localStorage) to render immediately,
+    // then verify admin role in the background.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) markActivity();
+      load(data.session?.user?.id ?? null, data.session?.user?.email ?? null);
     });
+
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {

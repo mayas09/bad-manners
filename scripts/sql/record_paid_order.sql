@@ -54,7 +54,7 @@ begin
   ) values (
     p_order_id, p_customer_id, p_customer_name, p_customer_phone, p_customer_email,
     p_subtotal_cents, p_total_cents, p_discount_cents,
-    p_pickup_time, nullif(p_order_notes, ''),
+    p_pickup_time::timestamptz, nullif(p_order_notes, ''),
     'paid', 'confirmed',
     p_stripe_session_id, p_stripe_payment_intent
   )

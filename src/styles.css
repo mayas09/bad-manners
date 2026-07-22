@@ -190,7 +190,7 @@
     will-change: transform;
   }
   .tilt-card:hover {
-    ransform: translateY(-6px) rotate(-0.4deg);
+    transform: translateY(-6px) rotate(-0.4deg);
     box-shadow: 0 24px 40px -18px color-mix(in oklch, var(--pink-deep) 50%, transparent);
   }
   .grain::before {

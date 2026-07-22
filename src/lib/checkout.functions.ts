@@ -120,24 +120,42 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: menuRows, error: menuErr } = await supabaseAdmin
       .from("menu_items")
-      .select("id, name, price_cents, is_sold_out")
+      .select("id, name, price_cents, price, is_sold_out")
       .in("id", menuIds);
     if (menuErr) throw new Error(`Failed to load menu prices: ${menuErr.message}`);
-    const priceMap = new Map((menuRows ?? []).map((r) => [r.id, r]));
+    const priceMap = new Map(
+      (menuRows ?? []).map((r) => [r.id, r as {
+        id: string; name: string; price_cents: number | null; price: string | null; is_sold_out: boolean | null;
+      }]),
+    );
+
+    // Fallback: if price_cents is null (legacy row), parse a single dollar
+    // amount from the free-text `price` field (e.g. "$5.50"). Ambiguous labels
+    // like "$4 / $5" return null so we reject with a clear error.
+    function parsePriceCents(price: string | null | undefined): number | null {
+      if (!price) return null;
+      const matches = price.match(/\$\s*\d+(?:\.\d+)?/g);
+      if (!matches || matches.length !== 1) return null;
+      const n = Number(matches[0].replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return Math.round(n * 100);
+    }
 
     const verifiedItems = data.items.map((it) => {
       const menuId = toMenuItemId(it.id)!;
       const row = priceMap.get(menuId);
       if (!row) throw new Error(`Menu item no longer available: ${it.name}`);
       if (row.is_sold_out) throw new Error(`Sold out: ${row.name}`);
-      if (!row.price_cents || row.price_cents <= 0) {
+      const effective =
+        row.price_cents && row.price_cents > 0 ? row.price_cents : parsePriceCents(row.price);
+      if (!effective || effective <= 0) {
         throw new Error(`This item can't be ordered online: ${row.name}`);
       }
       return {
         id: it.id,
         name: row.name,
         quantity: it.quantity,
-        unit_price_cents: row.price_cents,
+        unit_price_cents: effective,
         special_notes: it.special_notes ?? null,
       };
     });

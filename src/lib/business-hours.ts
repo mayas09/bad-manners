@@ -36,7 +36,7 @@ export function useBusinessSettings() {
         .select("day_of_week,open_time,close_time,is_closed")
         .order("day_of_week");
       if (cancelled) return;
-      if (!error && data && data.length) setDays(data as BusinessDay[]);
+      if (!error && data && (data as any).length) setDays(data as unknown as BusinessDay[]);
       setLoaded(true);
     })();
     return () => {

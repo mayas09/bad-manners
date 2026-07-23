@@ -32,20 +32,19 @@ export const sendPushNotification = createServerFn({ method: "POST" })
       if (data.userId && data.userId !== context.userId) throw new Error("Forbidden");
     }
 
+    const admin = supabaseAdmin as any;
+
     // Resolve recipient user IDs.
     let userIds: string[] = [];
     if (data.toAdmins) {
-      const { data: rows } = await supabaseAdmin
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-      userIds = (rows ?? []).map((r) => r.user_id as string);
+      const { data: rows } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+      userIds = (rows ?? []).map((r: any) => r.user_id as string);
     } else {
       userIds = [data.userId ?? context.userId];
     }
     if (userIds.length === 0) return { sent: 0 };
 
-    const { data: subs } = await supabaseAdmin
+    const { data: subs } = await admin
       .from("push_subscriptions")
       .select("endpoint,subscription_json")
       .in("user_id", userIds);
@@ -72,7 +71,7 @@ export const sendPushNotification = createServerFn({ method: "POST" })
     let sent = 0;
     const deadEndpoints: string[] = [];
     await Promise.all(
-      subs.map(async (row) => {
+      (subs as any[]).map(async (row) => {
         try {
           const sub = JSON.parse(row.subscription_json as string);
           await webpush.sendNotification(sub, notification);
@@ -88,7 +87,7 @@ export const sendPushNotification = createServerFn({ method: "POST" })
     );
 
     if (deadEndpoints.length) {
-      await supabaseAdmin.from("push_subscriptions").delete().in("endpoint", deadEndpoints);
+      await admin.from("push_subscriptions").delete().in("endpoint", deadEndpoints);
     }
 
     return { sent };

@@ -15,12 +15,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/price-utils";
 import { useSiteContent } from "@/components/site/use-site-content";
-import {
-  formatInSiteTime,
-  getSiteDateParts,
-  getSiteDayOfWeek,
-  siteDateTimeToUtcIso,
-} from "@/lib/time-utils";
+import { useBusinessSettings, generatePickupSlotsForToday } from "@/lib/business-hours";
+import { formatInSiteTime } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
@@ -28,41 +24,8 @@ export const Route = createFileRoute("/checkout")({
 
 const STRIPE_DRAFT_KEY = "bm_stripe_checkout_draft_v1";
 
-/** Generate 15-minute pickup slots between now+15min and shop close today. */
-function generatePickupSlots(hoursStr: string): { value: string; label: string }[] {
-  // hoursStr like "8:00 AM – 3:00 PM"
-  const parse = (s: string) => {
-    const m = s.trim().match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
-    if (!m) return null;
-    let h = parseInt(m[1], 10);
-    const min = m[2] ? parseInt(m[2], 10) : 0;
-    if (/PM/i.test(m[3]) && h !== 12) h += 12;
-    if (/AM/i.test(m[3]) && h === 12) h = 0;
-    return { h, min };
-  };
-  const parts = hoursStr.split(/[–-]/);
-  if (parts.length !== 2) return [];
-  const openT = parse(parts[0]);
-  const closeT = parse(parts[1]);
-  if (!openT || !closeT) return [];
-  const now = new Date();
-  const today = getSiteDateParts(now);
-  const todayDate = { year: today.year, month: today.month, day: today.day };
-  const open = new Date(siteDateTimeToUtcIso(todayDate, { hour: openT.h, minute: openT.min }));
-  const close = new Date(siteDateTimeToUtcIso(todayDate, { hour: closeT.h, minute: closeT.min }));
-  const start = new Date(Math.max(now.getTime() + 15 * 60 * 1000, open.getTime()));
-  // Round up to next 15 min
-  const rem = start.getMinutes() % 15;
-  if (rem) start.setMinutes(start.getMinutes() + (15 - rem), 0, 0);
-  const slots: { value: string; label: string }[] = [];
-  for (let t = new Date(start); t <= close; t = new Date(t.getTime() + 15 * 60 * 1000)) {
-    slots.push({
-      value: t.toISOString(),
-      label: formatInSiteTime(t, { hour: "numeric", minute: "2-digit" }),
-    });
-  }
-  return slots;
-}
+// Pickup slot generation lives in @/lib/business-hours and reads from the
+// business_settings table so admin hours changes take effect immediately.
 
 function CheckoutPage() {
   const cart = useCart();

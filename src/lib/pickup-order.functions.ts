@@ -43,10 +43,21 @@ export const placePickupOrder = createServerFn({ method: "POST" })
     const menuIds = Array.from(new Set(data.items.map((it) => it.menu_item_id)));
     const { data: menuRows, error: menuErr } = await supabaseAdmin
       .from("menu_items")
-      .select("id, name, price_cents, is_sold_out")
+      .select("id, name, price_cents, price, is_sold_out")
       .in("id", menuIds);
     if (menuErr) throw new Error(`Failed to load menu prices: ${menuErr.message}`);
     const priceMap = new Map((menuRows ?? []).map((r) => [r.id, r]));
+
+    // Fallback: parse a single dollar amount from the free-text `price`
+    // field (e.g. "$5.50") when price_cents is missing on legacy rows.
+    function parsePriceCents(price: string | null | undefined): number | null {
+      if (!price) return null;
+      const matches = price.match(/\$\s*\d+(?:\.\d+)?/g);
+      if (!matches || matches.length !== 1) return null;
+      const n = Number(matches[0].replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return Math.round(n * 100);
+    }
 
     type RpcItem = {
       menu_item_id: string;
@@ -56,17 +67,21 @@ export const placePickupOrder = createServerFn({ method: "POST" })
       special_notes: string | null;
     };
     const verifiedItems: RpcItem[] = data.items.map((it) => {
-      const row = priceMap.get(it.menu_item_id);
+      const row = priceMap.get(it.menu_item_id) as
+        | { id: string; name: string; price_cents: number | null; price: string | null; is_sold_out: boolean | null }
+        | undefined;
       if (!row) throw new Error(`Item is no longer on the menu`);
       if (row.is_sold_out) throw new Error(`Sold out: ${row.name}`);
-      if (!row.price_cents || row.price_cents <= 0) {
+      const effective =
+        row.price_cents && row.price_cents > 0 ? row.price_cents : parsePriceCents(row.price);
+      if (!effective || effective <= 0) {
         throw new Error(`This item can't be ordered online: ${row.name}`);
       }
       return {
         menu_item_id: it.menu_item_id,
         name: row.name,
         quantity: it.quantity,
-        unit_price_cents: row.price_cents,
+        unit_price_cents: effective,
         special_notes: it.special_notes ?? null,
       };
     });

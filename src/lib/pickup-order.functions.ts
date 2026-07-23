@@ -112,8 +112,11 @@ export const placePickupOrder = createServerFn({ method: "POST" })
     }
     const totalCents = Math.max(0, subtotalCents - discountCents);
 
-    // Expand the free-drink line: split the cheapest item into a paid line
-    // (qty-1) and a free line (qty=1 at 0¢) so the receipt shows the discount.
+    // Expand the free-drink line only when the cheapest item has qty>1: split
+    // into a paid line (qty-1) and a free line (qty=1 at 0¢). When qty=1 we
+    // keep the item as-is at full price — the SQL RPC recomputes subtotal
+    // from the paid lines and applies the discount separately, so a $0 total
+    // still balances (computed subtotal = discount = cheapest paid line).
     let rpcItems: Omit<RpcItem, never>[] = verifiedItems;
     if (redeem && discountCents > 0) {
       const cheapestIdx = verifiedItems.reduce(
@@ -121,13 +124,16 @@ export const placePickupOrder = createServerFn({ method: "POST" })
           it.unit_price_cents < verifiedItems[best].unit_price_cents ? idx : best,
         0,
       );
-      rpcItems = verifiedItems.flatMap((it, idx) => {
-        if (idx !== cheapestIdx) return [it];
-        const rows: RpcItem[] = [];
-        if (it.quantity > 1) rows.push({ ...it, quantity: it.quantity - 1 });
-        rows.push({ ...it, quantity: 1, unit_price_cents: 0 });
-        return rows;
-      });
+      const cheapest = verifiedItems[cheapestIdx];
+      if (cheapest.quantity > 1) {
+        rpcItems = verifiedItems.flatMap((it, idx) => {
+          if (idx !== cheapestIdx) return [it];
+          return [
+            { ...it, quantity: it.quantity - 1 },
+            { ...it, quantity: 1, unit_price_cents: 0 },
+          ];
+        });
+      }
     }
 
     const { data: rpcData, error } = await (supabase.rpc as unknown as (

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
+import { useAdminAuth } from "@/lib/use-admin-auth";
 import { cancelOrderWithRefund } from "@/lib/checkout.functions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -69,6 +70,22 @@ function paymentBadge(status: string) {
 }
 
 function OrdersPage() {
+  const admin = useAdminAuth();
+
+  if (!admin.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+          <p className="mt-2 text-slate-600">You must be an admin to view this page.</p>
+          <a href="/" className="mt-4 inline-block text-blue-600 underline">
+            Go to homepage
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, Item[]>>({});
   const [soundOn, setSoundOn] = useState(true);

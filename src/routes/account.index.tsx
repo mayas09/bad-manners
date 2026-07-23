@@ -176,10 +176,12 @@ function AccountHome() {
   }
 
   async function cancelOrder(id: string) {
+    if (!auth.user) return;
     const { error } = await supabase
       .from("orders")
       .update({ status: "cancelled" })
       .eq("id", id)
+      .eq("customer_id", auth.user.id)
       .eq("status", "pending");
     if (error) return toast.error(error.message);
     toast.success("Order cancelled");

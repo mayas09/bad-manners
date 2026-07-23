@@ -22,18 +22,44 @@ const INFO_FIELDS: { key: string; label: string }[] = [
 ];
 
 type HourRow = { id: string; label: string; hours_text: string; sort_order: number };
+type DaySetting = {
+  day_of_week: number;
+  open_time: string;
+  close_time: string;
+  is_closed: boolean;
+};
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DEFAULT_DAYS: DaySetting[] = [
+  { day_of_week: 0, open_time: "08:30", close_time: "15:00", is_closed: false },
+  { day_of_week: 1, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 2, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 3, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 4, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 5, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 6, open_time: "08:30", close_time: "15:00", is_closed: false },
+];
+
+function normalizeTime(t: string): string {
+  // Accept "HH:MM" or "HH:MM:SS" and return "HH:MM".
+  return t.slice(0, 5);
+}
+
 
 function InfoPage() {
   const [info, setInfo] = useState<Record<string, string>>({});
   const [hours, setHours] = useState<HourRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState<DaySetting[]>(DEFAULT_DAYS);
   const [previewOpen, setPreviewOpen] = useState(false);
+
 
   async function load() {
     setLoading(true);
-    const [infoRes, hoursRes] = await Promise.all([
+    const [infoRes, hoursRes, settingsRes] = await Promise.all([
       supabase.from("business_info").select("*"),
       supabase.from("business_hours").select("*").order("sort_order"),
+      (supabase.from as any)("business_settings").select("*").order("day_of_week"),
     ]);
     const map: Record<string, string> = {};
     (infoRes.data ?? []).forEach((r: any) => {
@@ -41,8 +67,24 @@ function InfoPage() {
     });
     setInfo(map);
     setHours((hoursRes.data ?? []) as HourRow[]);
+    const settingsRows = (settingsRes?.data ?? []) as DaySetting[];
+    if (settingsRows.length) {
+      const merged = DEFAULT_DAYS.map((d) => {
+        const found = settingsRows.find((s) => s.day_of_week === d.day_of_week);
+        return found
+          ? {
+              day_of_week: found.day_of_week,
+              open_time: normalizeTime(found.open_time),
+              close_time: normalizeTime(found.close_time),
+              is_closed: !!found.is_closed,
+            }
+          : d;
+      });
+      setDays(merged);
+    }
     setLoading(false);
   }
+
   useEffect(() => {
     load();
   }, []);
@@ -87,7 +129,22 @@ function InfoPage() {
     setHours((hs) => hs.filter((h) => h.id !== id));
   }
 
+  async function saveSchedule() {
+    const rows = days.map((d) => ({
+      day_of_week: d.day_of_week,
+      open_time: d.open_time,
+      close_time: d.close_time,
+      is_closed: d.is_closed,
+    }));
+    const { error } = await (supabase.from as any)("business_settings").upsert(rows, {
+      onConflict: "day_of_week",
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Pickup hours saved");
+  }
+
   if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
+
 
   return (
     <div className="space-y-6">
@@ -176,6 +233,70 @@ function InfoPage() {
           </div>
         </section>
       </div>
+
+      <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Pickup schedule</h2>
+            <p className="text-sm text-slate-500">
+              Controls the times customers can select at checkout. Times use the store timezone.
+            </p>
+          </div>
+          <Button size="sm" onClick={saveSchedule}>
+            <Save className="size-4 mr-1.5" /> Save schedule
+          </Button>
+        </div>
+        <div className="mt-4 space-y-2">
+          {days.map((d) => (
+            <div key={d.day_of_week} className="grid grid-cols-12 items-center gap-2">
+              <span className="col-span-3 text-sm font-medium text-slate-700">
+                {DAY_NAMES[d.day_of_week]}
+              </span>
+              <Input
+                type="time"
+                className="col-span-3"
+                value={d.open_time}
+                disabled={d.is_closed}
+                onChange={(e) =>
+                  setDays((ds) =>
+                    ds.map((x) =>
+                      x.day_of_week === d.day_of_week ? { ...x, open_time: e.target.value } : x,
+                    ),
+                  )
+                }
+              />
+              <Input
+                type="time"
+                className="col-span-3"
+                value={d.close_time}
+                disabled={d.is_closed}
+                onChange={(e) =>
+                  setDays((ds) =>
+                    ds.map((x) =>
+                      x.day_of_week === d.day_of_week ? { ...x, close_time: e.target.value } : x,
+                    ),
+                  )
+                }
+              />
+              <label className="col-span-3 flex items-center gap-1.5 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={d.is_closed}
+                  onChange={(e) =>
+                    setDays((ds) =>
+                      ds.map((x) =>
+                        x.day_of_week === d.day_of_week ? { ...x, is_closed: e.target.checked } : x,
+                      ),
+                    )
+                  }
+                />
+                Closed
+              </label>
+            </div>
+          ))}
+        </div>
+      </section>
+
 
       <section className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md">
         <h2 className="text-base font-semibold text-slate-900">Loyalty program</h2>

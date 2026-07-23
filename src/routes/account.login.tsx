@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
-import { AuthShell } from "@/components/site/AuthShell";
+import { AuthShell, GoogleButton } from "@/components/site/AuthShell";
 
 const searchSchema = z.object({ next: z.string().optional() });
 
@@ -118,6 +118,15 @@ function LoginPage() {
     else toast.success("Confirmation email re-sent");
   }
 
+  async function onGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/account` },
+    });
+    if (error) toast.error(error.message);
+  }
+
+
 
   return (
     <AuthShell>
@@ -205,6 +214,15 @@ function LoginPage() {
           </button>
         )}
       </form>
+
+      {!forgot && (
+        <>
+          <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
+            <span className="h-px flex-1 bg-slate-800" /> or <span className="h-px flex-1 bg-slate-800" />
+          </div>
+          <GoogleButton onClick={onGoogle} />
+        </>
+      )}
 
       {!forgot && (
         <p className="mt-6 text-center text-sm text-slate-400">

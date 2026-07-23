@@ -1,10 +1,15 @@
-import { Bell } from "lucide-react";
+import { Bell, BellOff, BellRing } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/lib/use-customer-auth";
-import { formatInSiteTime } from "@/lib/time-utils";
+import {
+  getPushStatus,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/push-client";
 
 type Notification = {
   id: string;
@@ -14,6 +19,24 @@ type Notification = {
   order_id: string | null;
 };
 
+function timeAgo(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diff = Math.max(0, Date.now() - then);
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} day${d > 1 ? "s" : ""} ago`;
+  return new Date(iso).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    timeZone: "America/New_York",
+  });
+}
+
 export function NotificationBell() {
   const auth = useCustomerAuth();
   const nav = useNavigate();
@@ -21,6 +44,8 @@ export function NotificationBell() {
   const [items, setItems] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +55,14 @@ export function NotificationBell() {
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const status = await getPushStatus();
+      setPushEnabled(status === "granted");
+    })();
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -83,7 +116,7 @@ export function NotificationBell() {
     } catch (err) {
       console.error("Failed to subscribe to notifications channel", err);
     }
-    
+
     return () => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
@@ -116,7 +149,29 @@ export function NotificationBell() {
       nav({ to: "/account/events" });
     }
   }
-  
+
+  async function togglePush() {
+    if (!userId) return;
+    setPushBusy(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush();
+        setPushEnabled(false);
+        toast("Push notifications turned off");
+      } else {
+        const ok = await subscribeToPush(userId);
+        if (ok) {
+          setPushEnabled(true);
+          toast.success("Push notifications enabled");
+        } else {
+          toast.error("Could not enable push notifications");
+        }
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   if (auth.loading || !auth.user) return null;
 
   return (
@@ -134,15 +189,28 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-[--pink]/20 bg-white shadow-xl overflow-hidden z-50">
-          <div className="px-3 py-2 border-b border-slate-100">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[--pink]/20 bg-white shadow-xl overflow-hidden z-50">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
             <p className="text-sm font-semibold text-slate-900">Notifications</p>
+            {isPushSupported() && (
+              <button
+                type="button"
+                onClick={togglePush}
+                disabled={pushBusy}
+                className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                title={pushEnabled ? "Turn off push notifications" : "Enable push notifications"}
+              >
+                {pushEnabled ? <BellRing className="size-3" /> : <BellOff className="size-3" />}
+                {pushEnabled ? "On" : "Off"}
+              </button>
+            )}
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No notifications yet
-              </p>
+              <div className="flex flex-col items-center justify-center gap-2 px-3 py-8 text-center">
+                <Bell className="size-6 text-slate-300" />
+                <p className="text-sm text-muted-foreground">No new notifications</p>
+              </div>
             ) : (
               items.map((n) => (
                 <button
@@ -152,14 +220,7 @@ export function NotificationBell() {
                   className="w-full text-left px-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
                 >
                   <p className="text-sm text-slate-800">{n.message}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {formatInSiteTime(n.created_at, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">{timeAgo(n.created_at)}</p>
                 </button>
               ))
             )}

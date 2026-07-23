@@ -342,22 +342,38 @@ function AccountHome() {
         <section className="glass rounded-2xl p-6">
           <h2 className="font-display text-2xl">Loyalty punch card</h2>
           {(auth.profile?.free_drinks_available ?? 0) > 0 && (
-            <div className="mt-3 rounded-xl bg-[--pink-deep] px-4 py-3 font-semibold text-white">
-              You have {auth.profile!.free_drinks_available} free drink
-              {auth.profile!.free_drinks_available > 1 ? "s" : ""} available! 🎉
+            <div
+              className="mt-3 flex items-center gap-3 rounded-xl px-4 py-3 text-white shadow-md"
+              style={{ backgroundColor: "var(--pink-deep)" }}
+            >
+              <span className="text-2xl leading-none" aria-hidden>🎉</span>
+              <div className="flex-1">
+                <div className="text-base font-semibold">
+                  {auth.profile!.free_drinks_available} free drink
+                  {auth.profile!.free_drinks_available > 1 ? "s" : ""} unlocked!
+                </div>
+                <div className="text-xs text-white/90">
+                  Redeem at checkout — we'll take the cheapest drink off your bill.
+                </div>
+              </div>
             </div>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
-            {Array.from({ length: loyaltyMilestone }).map((_, i) => (
-              <span
-                key={i}
-                className={`size-8 rounded-full border-2 ${
-                  i < (auth.profile?.loyalty_count ?? 0)
-                    ? "border-[--pink-deep] bg-[--pink-deep]"
-                    : "border-[--pink]/40 bg-transparent"
-                }`}
-              />
-            ))}
+            {Array.from({ length: loyaltyMilestone }).map((_, i) => {
+              const filled = i < (auth.profile?.loyalty_count ?? 0);
+              return (
+                <span
+                  key={i}
+                  className="size-8 rounded-full border-2 transition-colors"
+                  style={{
+                    borderColor: filled
+                      ? "var(--pink-deep)"
+                      : "color-mix(in oklch, var(--pink) 40%, transparent)",
+                    backgroundColor: filled ? "var(--pink-deep)" : "transparent",
+                  }}
+                />
+              );
+            })}
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {auth.profile?.loyalty_count ?? 0} / {loyaltyMilestone} punches toward your free drink

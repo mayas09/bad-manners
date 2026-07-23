@@ -234,6 +234,70 @@ function InfoPage() {
         </section>
       </div>
 
+      <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Pickup schedule</h2>
+            <p className="text-sm text-slate-500">
+              Controls the times customers can select at checkout. Times use the store timezone.
+            </p>
+          </div>
+          <Button size="sm" onClick={saveSchedule}>
+            <Save className="size-4 mr-1.5" /> Save schedule
+          </Button>
+        </div>
+        <div className="mt-4 space-y-2">
+          {days.map((d) => (
+            <div key={d.day_of_week} className="grid grid-cols-12 items-center gap-2">
+              <span className="col-span-3 text-sm font-medium text-slate-700">
+                {DAY_NAMES[d.day_of_week]}
+              </span>
+              <Input
+                type="time"
+                className="col-span-3"
+                value={d.open_time}
+                disabled={d.is_closed}
+                onChange={(e) =>
+                  setDays((ds) =>
+                    ds.map((x) =>
+                      x.day_of_week === d.day_of_week ? { ...x, open_time: e.target.value } : x,
+                    ),
+                  )
+                }
+              />
+              <Input
+                type="time"
+                className="col-span-3"
+                value={d.close_time}
+                disabled={d.is_closed}
+                onChange={(e) =>
+                  setDays((ds) =>
+                    ds.map((x) =>
+                      x.day_of_week === d.day_of_week ? { ...x, close_time: e.target.value } : x,
+                    ),
+                  )
+                }
+              />
+              <label className="col-span-3 flex items-center gap-1.5 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={d.is_closed}
+                  onChange={(e) =>
+                    setDays((ds) =>
+                      ds.map((x) =>
+                        x.day_of_week === d.day_of_week ? { ...x, is_closed: e.target.checked } : x,
+                      ),
+                    )
+                  }
+                />
+                Closed
+              </label>
+            </div>
+          ))}
+        </div>
+      </section>
+
+
       <section className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md">
         <h2 className="text-base font-semibold text-slate-900">Loyalty program</h2>
         <p className="mt-1 text-sm text-slate-500">

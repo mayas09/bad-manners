@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
-import { AuthShell } from "@/components/site/AuthShell";
+import { AuthShell, GoogleButton } from "@/components/site/AuthShell";
 
 const searchSchema = z.object({ next: z.string().optional() });
 
@@ -117,6 +117,15 @@ function LoginPage() {
     if (error) toast.error(error.message);
     else toast.success("Confirmation email re-sent");
   }
+
+  async function onGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/account` },
+    });
+    if (error) toast.error(error.message);
+  }
+
 
 
   return (

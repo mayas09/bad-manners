@@ -28,11 +28,12 @@ function stripePaymentIntentId(pi: string | { id?: string } | null) {
 }
 
 Deno.serve(async (request) => {
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
   const stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!stripeWebhookSecret || !supabaseUrl || !supabaseServiceRoleKey) {
+  if (!stripeSecretKey || !stripeWebhookSecret || !supabaseUrl || !supabaseServiceRoleKey) {
     console.error("stripe-webhook: missing required environment variables");
     return new Response("Server not configured", { status: 500 });
   }
@@ -43,7 +44,7 @@ Deno.serve(async (request) => {
   }
 
   const rawBody = await request.text();
-  const stripe = new Stripe(stripeWebhookSecret, { apiVersion: "2024-12-18.acacia" });
+  const stripe = new Stripe(stripeSecretKey);
 
   let event: Stripe.Event;
   try {

@@ -216,6 +216,15 @@ function LoginPage() {
       </form>
 
       {!forgot && (
+        <>
+          <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
+            <span className="h-px flex-1 bg-slate-800" /> or <span className="h-px flex-1 bg-slate-800" />
+          </div>
+          <GoogleButton onClick={onGoogle} />
+        </>
+      )}
+
+      {!forgot && (
         <p className="mt-6 text-center text-sm text-slate-400">
           Don't have an account?{" "}
           <Link

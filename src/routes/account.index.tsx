@@ -94,6 +94,7 @@ function AccountHome() {
       supabase
         .from("orders")
         .select("*")
+        .eq("customer_id", uid)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
           setOrders((data as Order[]) ?? []);

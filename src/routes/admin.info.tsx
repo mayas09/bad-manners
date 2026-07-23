@@ -22,12 +22,37 @@ const INFO_FIELDS: { key: string; label: string }[] = [
 ];
 
 type HourRow = { id: string; label: string; hours_text: string; sort_order: number };
+type DaySetting = {
+  day_of_week: number;
+  open_time: string;
+  close_time: string;
+  is_closed: boolean;
+};
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DEFAULT_DAYS: DaySetting[] = [
+  { day_of_week: 0, open_time: "08:30", close_time: "15:00", is_closed: false },
+  { day_of_week: 1, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 2, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 3, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 4, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 5, open_time: "08:00", close_time: "15:00", is_closed: false },
+  { day_of_week: 6, open_time: "08:30", close_time: "15:00", is_closed: false },
+];
+
+function normalizeTime(t: string): string {
+  // Accept "HH:MM" or "HH:MM:SS" and return "HH:MM".
+  return t.slice(0, 5);
+}
+
 
 function InfoPage() {
   const [info, setInfo] = useState<Record<string, string>>({});
   const [hours, setHours] = useState<HourRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState<DaySetting[]>(DEFAULT_DAYS);
   const [previewOpen, setPreviewOpen] = useState(false);
+
 
   async function load() {
     setLoading(true);

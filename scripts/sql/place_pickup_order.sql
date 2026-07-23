@@ -152,7 +152,7 @@ begin
     p_pickup_time::timestamptz, nullif(p_order_notes, ''),
     p_payment_status::public.payment_status, 'pending'
   )
-  returning id, order_number into v_order_id, v_order_number;
+  returning orders.id, orders.order_number into v_order_id, v_order_number;
 
   insert into public.order_items (order_id, menu_item_id, name, quantity, unit_price_cents, special_notes)
   select
@@ -168,8 +168,8 @@ begin
     nullif(elem->>'special_notes', '')
   from jsonb_array_elements(p_items) as elem;
 
-  order_id := v_order_id;
-  order_number := v_order_number;
+  place_pickup_order.order_id := v_order_id;
+  place_pickup_order.order_number := v_order_number;
   return next;
 end;
 $$;

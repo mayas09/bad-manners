@@ -235,7 +235,9 @@ function CheckoutPage() {
           <section className="glass rounded-2xl p-5 space-y-3">
             <h2 className="font-display text-xl">Pickup time (today)</h2>
             {slots.length === 0 ? (
-              <p className="text-sm text-red-600">Shop is closed for pickup today.</p>
+              <p className="text-sm text-red-600">
+                {shopClosedToday ? "Closed today. Please check back tomorrow." : "No pickup slots left today."}
+              </p>
             ) : (
               <select
                 value={pickup}

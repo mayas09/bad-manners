@@ -72,7 +72,7 @@ begin
       raise exception 'Item missing menu_item_id';
     end if;
 
-    select id, name, price_cents, coalesce(is_sold_out, false) as sold_out
+    select id, name, price_cents, price, coalesce(is_sold_out, false) as sold_out
       into v_menu
       from public.menu_items
       where id = v_mid;
@@ -83,6 +83,18 @@ begin
     if v_menu.sold_out then
       raise exception 'Sold out: %', v_menu.name;
     end if;
+
+    -- Fallback: if price_cents is missing on a legacy row, parse a single
+    -- dollar amount from the free-text `price` field (e.g. "$5.50").
+    if v_menu.price_cents is null or v_menu.price_cents <= 0 then
+      if v_menu.price is not null
+         and v_menu.price ~ '^\s*\$?\s*[0-9]+(\.[0-9]+)?\s*$' then
+        v_menu.price_cents := round(
+          (regexp_replace(v_menu.price, '[^0-9.]', '', 'g'))::numeric * 100
+        )::int;
+      end if;
+    end if;
+
     if v_menu.price_cents is null or v_menu.price_cents <= 0 then
       raise exception 'Item cannot be ordered online: %', v_menu.name;
     end if;

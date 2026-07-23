@@ -106,7 +106,12 @@ function CheckoutPage() {
       const subtotal = cart.subtotalCents;
       const total = discountedTotalCents;
 
-      if (paymentMethod === "stripe") {
+      // Free orders (fully covered by a reward) skip Stripe entirely —
+      // Stripe can't process a $0 charge, and the 0-amount session was
+      // failing at the "Paid amount does not match order total" step.
+      const isFreeOrder = total === 0 && discountCents > 0;
+
+      if (paymentMethod === "stripe" && !isFreeOrder) {
         const orderId = crypto.randomUUID();
         const draft = {
           orderId,

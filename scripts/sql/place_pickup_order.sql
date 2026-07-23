@@ -123,19 +123,10 @@ begin
       raise exception 'No free drink available to redeem';
     end if;
 
-    -- Discount must equal the cheapest priced item on the order.
-    select min(price_cents) into v_cheapest
-      from public.menu_items
-      where id in (
-        select case
-          when (elem->>'menu_item_id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-          then (elem->>'menu_item_id')::uuid
-          else null
-        end
-        from jsonb_array_elements(p_items) as elem
-        where coalesce((elem->>'unit_price_cents')::int, 0) > 0
-      )
-      and price_cents > 0;
+    -- Discount = cheapest paid line already validated against menu_items above.
+    select min((elem->>'unit_price_cents')::int) into v_cheapest
+      from jsonb_array_elements(p_items) as elem
+      where coalesce((elem->>'unit_price_cents')::int, 0) > 0;
 
     v_computed_discount := coalesce(v_cheapest, 0);
   end if;

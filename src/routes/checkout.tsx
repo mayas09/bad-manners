@@ -327,9 +327,11 @@ function CheckoutPage() {
           >
             {busy
               ? "Preparing…"
-              : paymentMethod === "stripe"
-                ? `Pay ${formatCents(discountedTotalCents)} with Stripe`
-                : `Place order — pay ${formatCents(discountedTotalCents)} at pickup`}
+              : discountedTotalCents === 0
+                ? "Place free order 🎉"
+                : paymentMethod === "stripe"
+                  ? `Pay ${formatCents(discountedTotalCents)} with Stripe`
+                  : `Place order — pay ${formatCents(discountedTotalCents)} at pickup`}
           </Button>
         </form>
 

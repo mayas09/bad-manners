@@ -56,9 +56,10 @@ function InfoPage() {
 
   async function load() {
     setLoading(true);
-    const [infoRes, hoursRes] = await Promise.all([
+    const [infoRes, hoursRes, settingsRes] = await Promise.all([
       supabase.from("business_info").select("*"),
       supabase.from("business_hours").select("*").order("sort_order"),
+      (supabase.from as any)("business_settings").select("*").order("day_of_week"),
     ]);
     const map: Record<string, string> = {};
     (infoRes.data ?? []).forEach((r: any) => {
@@ -66,8 +67,24 @@ function InfoPage() {
     });
     setInfo(map);
     setHours((hoursRes.data ?? []) as HourRow[]);
+    const settingsRows = (settingsRes?.data ?? []) as DaySetting[];
+    if (settingsRows.length) {
+      const merged = DEFAULT_DAYS.map((d) => {
+        const found = settingsRows.find((s) => s.day_of_week === d.day_of_week);
+        return found
+          ? {
+              day_of_week: found.day_of_week,
+              open_time: normalizeTime(found.open_time),
+              close_time: normalizeTime(found.close_time),
+              is_closed: !!found.is_closed,
+            }
+          : d;
+      });
+      setDays(merged);
+    }
     setLoading(false);
   }
+
   useEffect(() => {
     load();
   }, []);
@@ -112,7 +129,22 @@ function InfoPage() {
     setHours((hs) => hs.filter((h) => h.id !== id));
   }
 
+  async function saveSchedule() {
+    const rows = days.map((d) => ({
+      day_of_week: d.day_of_week,
+      open_time: d.open_time,
+      close_time: d.close_time,
+      is_closed: d.is_closed,
+    }));
+    const { error } = await (supabase.from as any)("business_settings").upsert(rows, {
+      onConflict: "day_of_week",
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Pickup hours saved");
+  }
+
   if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
+
 
   return (
     <div className="space-y-6">

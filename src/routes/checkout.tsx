@@ -86,16 +86,11 @@ function CheckoutPage() {
     }
   }, [auth.profile]);
 
-  const slots = useMemo(() => {
-    if (!content.loaded && content.hours.length === 0) return [];
-    const dayIdx = getSiteDayOfWeek(); // 0=Sun in the site timezone
-    // Match by label heuristic
-    const label =
-      dayIdx === 0 || dayIdx === 6
-        ? content.hours.find((h) => /sat|sun/i.test(h.label))
-        : content.hours.find((h) => /mon|tue|wed|thu|fri|weekday/i.test(h.label));
-    return generatePickupSlots(label?.hours_text ?? "8:00 AM – 3:00 PM");
-  }, [content.hours, content.loaded]);
+  const business = useBusinessSettings();
+  const { slots, closed: shopClosedToday } = useMemo(
+    () => generatePickupSlotsForToday(business.days),
+    [business.days],
+  );
 
   useEffect(() => {
     if (slots.length && !pickup) setPickup(slots[0].value);

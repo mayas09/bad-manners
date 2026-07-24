@@ -279,12 +279,17 @@ function InfoPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <Clock className="size-4 mt-0.5 text-pink-700" />
-                  <span>
-                    {hours.map((h) => (
-                      <span key={h.id} className="block">
-                        <strong>{h.label}:</strong> {h.hours_text}
-                      </span>
-                    ))}
+                  <span className="space-y-0.5">
+                    {DAY_NAMES.map((name, idx) => {
+                      const d = days.find((x) => x.day_of_week === idx);
+                      if (!d) return null;
+                      return (
+                        <span key={idx} className="block">
+                          <strong>{name}:</strong>{" "}
+                          {d.is_closed ? "Closed" : `${d.open_time} – ${d.close_time}`}
+                        </span>
+                      );
+                    })}
                   </span>
                 </p>
               </div>

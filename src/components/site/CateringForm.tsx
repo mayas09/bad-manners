@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyHcaptcha } from "@/lib/verify-hcaptcha.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY as string | undefined;
+
 export function CateringForm() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const payload = {
       name: String(fd.get("name") || "").trim(),
       email: String(fd.get("email") || "").trim(),
@@ -26,16 +33,42 @@ export function CateringForm() {
       toast.error("Name, email, and a message are required.");
       return;
     }
+    if (!HCAPTCHA_SITE_KEY) {
+      toast.error("Captcha is not configured. Please contact us on Instagram.");
+      return;
+    }
+    if (!captchaToken) {
+      toast.error("Please complete the captcha challenge.");
+      return;
+    }
+
     setSending(true);
+    try {
+      // Server-side verification of the captcha token.
+      await verifyHcaptcha({ data: { token: captchaToken } });
+    } catch (err) {
+      setSending(false);
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
+      toast.error(
+        err instanceof Error ? err.message : "Captcha verification failed. Try again.",
+      );
+      return;
+    }
+
     const { error } = await supabase.from("catering_inquiries").insert(payload);
     setSending(false);
     if (error) {
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       toast.error("Couldn't send. Try again or DM us on Instagram.");
       return;
     }
     setDone(true);
     toast.success("Got it — Ash will be in touch soon.");
-    (e.target as HTMLFormElement).reset();
+    form.reset();
+    captchaRef.current?.resetCaptcha();
+    setCaptchaToken(null);
   }
 
   if (done) {
@@ -83,9 +116,27 @@ export function CateringForm() {
           placeholder="What you're imagining, drinks of interest, location…"
         />
       </Field>
+
+      {HCAPTCHA_SITE_KEY ? (
+        <div className="flex justify-center">
+          <HCaptcha
+            ref={captchaRef}
+            sitekey={HCAPTCHA_SITE_KEY}
+            onVerify={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
+            theme="dark"
+          />
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground text-center">
+          Captcha is not configured. Set VITE_HCAPTCHA_SITE_KEY.
+        </p>
+      )}
+
       <Button
         type="submit"
-        disabled={sending}
+        disabled={sending || !captchaToken}
         className="bg-fire text-white hover:opacity-95 h-11 text-base"
       >
         {sending ? "Sending…" : "Send Inquiry"}

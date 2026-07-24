@@ -18,6 +18,7 @@ import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
 import { Route as AdminPhotosRouteImport } from './routes/admin.photos'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminInfoRouteImport } from './routes/admin.info'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
@@ -72,6 +73,11 @@ const AdminPhotosRoute = AdminPhotosRouteImport.update({
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMenuRoute = AdminMenuRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/order/$orderId': typeof OrderOrderIdRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/order/$orderId': typeof OrderOrderIdRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/admin/events': typeof AdminEventsRoute
   '/admin/info': typeof AdminInfoRoute
   '/admin/menu': typeof AdminMenuRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/photos': typeof AdminPhotosRoute
   '/order/$orderId': typeof OrderOrderIdRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
+    | '/admin/notifications'
     | '/admin/orders'
     | '/admin/photos'
     | '/order/$orderId'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
+    | '/admin/notifications'
     | '/admin/orders'
     | '/admin/photos'
     | '/order/$orderId'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/info'
     | '/admin/menu'
+    | '/admin/notifications'
     | '/admin/orders'
     | '/admin/photos'
     | '/order/$orderId'
@@ -323,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/menu': {
@@ -424,6 +443,7 @@ interface AdminRouteChildren {
   AdminEventsRoute: typeof AdminEventsRoute
   AdminInfoRoute: typeof AdminInfoRoute
   AdminMenuRoute: typeof AdminMenuRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPhotosRoute: typeof AdminPhotosRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -434,6 +454,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEventsRoute: AdminEventsRoute,
   AdminInfoRoute: AdminInfoRoute,
   AdminMenuRoute: AdminMenuRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPhotosRoute: AdminPhotosRoute,
   AdminIndexRoute: AdminIndexRoute,

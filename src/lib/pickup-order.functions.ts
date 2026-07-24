@@ -141,6 +141,7 @@ export const placePickupOrder = createServerFn({ method: "POST" })
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>)("place_pickup_order", {
+      p_order_id: data.orderId,
       p_customer_name: data.customerName,
       p_customer_phone: data.customerPhone,
       p_customer_email: data.customerEmail ?? null,

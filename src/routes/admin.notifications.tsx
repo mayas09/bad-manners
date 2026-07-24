@@ -21,7 +21,7 @@ export const Route = createFileRoute("/admin/notifications")({
 });
 
 type Audience = "all" | "admins" | "user";
-type Customer = { id: string; email: string | null; full_name: string | null };
+type Customer = { id: string; email: string | null; first_name: string | null; last_name: string | null };
 
 function NotificationsPage() {
   const auth = useAdminAuth();

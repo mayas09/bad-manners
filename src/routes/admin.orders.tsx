@@ -189,6 +189,19 @@ function OrdersPage() {
         .from("notifications")
         .insert({ customer_id: o.customer_id, order_id: o.id, message });
       if (notifyError) console.error("Failed to send order notification:", notifyError.message);
+      try {
+        await sendPushNotification({
+          data: {
+            userId: o.customer_id,
+            title: `Order #${o.order_number}`,
+            body: message,
+            url: `/account/receipt/${o.id}`,
+            tag: `order-${o.id}`,
+          },
+        });
+      } catch (err) {
+        console.error("Failed to send push notification:", err);
+      }
     }
   }
 

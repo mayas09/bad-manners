@@ -59,6 +59,42 @@ const FALLBACK_HOURS = [
   { label: "Sat – Sun", hours_text: "8:30 AM – 3:00 PM" },
 ];
 
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function fmtTime(t: string): string {
+  const [hStr, mStr] = t.split(":");
+  let h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10) || 0;
+  const suffix = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
+function hoursFromSettings(
+  rows: { day_of_week: number; open_time: string; close_time: string; is_closed: boolean }[],
+): { label: string; hours_text: string }[] {
+  const order = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sun
+  const byDay = new Map(rows.map((r) => [r.day_of_week, r]));
+  type Group = { startIdx: number; endIdx: number; text: string };
+  const groups: Group[] = [];
+  order.forEach((dow, idx) => {
+    const r = byDay.get(dow);
+    const text =
+      !r || r.is_closed ? "Closed" : `${fmtTime(r.open_time)} – ${fmtTime(r.close_time)}`;
+    const last = groups[groups.length - 1];
+    if (last && last.text === text && last.endIdx === idx - 1) {
+      last.endIdx = idx;
+    } else {
+      groups.push({ startIdx: idx, endIdx: idx, text });
+    }
+  });
+  return groups.map((g) => {
+    const s = DAY_SHORT[order[g.startIdx]];
+    const e = DAY_SHORT[order[g.endIdx]];
+    return { label: g.startIdx === g.endIdx ? s : `${s} – ${e}`, hours_text: g.text };
+  });
+}
+
 function currentSeason(month: number) {
   if (month === 12 || month <= 2) return "winter";
   if (month <= 5) return "spring";

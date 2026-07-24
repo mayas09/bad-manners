@@ -22,7 +22,6 @@ const INFO_FIELDS: { key: string; label: string }[] = [
   { key: "map_query", label: "Map search query" },
 ];
 
-type HourRow = { id: string; label: string; hours_text: string; sort_order: number };
 type DaySetting = {
   day_of_week: number;
   open_time: string;

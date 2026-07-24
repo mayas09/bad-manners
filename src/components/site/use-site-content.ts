@@ -197,11 +197,9 @@ export function useSiteContent(): SiteContent {
         if (r.key in info && r.value) (info as any)[r.key] = r.value;
       });
 
-      // Hours
-      const hours =
-        h.data && h.data.length
-          ? h.data.map((r: any) => ({ label: r.label, hours_text: r.hours_text }))
-          : FALLBACK_HOURS;
+      // Hours — derived from business_settings (same source as checkout).
+      const hoursRows = (h && !h.error ? (h.data as any[]) : null) ?? [];
+      const hours = hoursRows.length ? hoursFromSettings(hoursRows as any) : FALLBACK_HOURS;
 
       // Images — use the site (America/New_York) month so seasonal galleries
       // don't flip based on the visitor's timezone.

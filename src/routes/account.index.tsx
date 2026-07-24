@@ -11,6 +11,7 @@ import { formatCents, parsePriceToCents } from "@/lib/price-utils";
 import { formatInSiteTime } from "@/lib/time-utils";
 import { useCart } from "@/lib/cart-context";
 import { Heart, Plus } from "lucide-react";
+import { PushOptInBanner } from "@/components/site/PushOptInBanner";
 
 export const Route = createFileRoute("/account/")({
   component: AccountHome,
@@ -214,6 +215,7 @@ function AccountHome() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-10">
+        <PushOptInBanner userId={auth.user.id} />
         <section className="flex flex-wrap gap-3">
           <Link
             to="/account/events"

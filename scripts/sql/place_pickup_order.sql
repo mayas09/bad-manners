@@ -1,9 +1,22 @@
 -- H3 fix (pay-on-pickup path): atomic order + items + optional reward redemption.
+-- Idempotent: client generates p_order_id (uuid). Retrying the same call
+-- (double-click, network retry) returns the original order instead of
+-- creating a duplicate — enforced via ON CONFLICT (id) DO NOTHING.
+--
 -- Defense-in-depth: recomputes subtotal/total from menu_items and rejects
 -- mismatches, so even a compromised server function cannot forge prices.
 -- Run this in the Supabase SQL Editor.
 
+-- Drop any older overloads before re-creating with the new signature.
+drop function if exists public.place_pickup_order(
+  text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
+);
+drop function if exists public.place_pickup_order(
+  uuid, text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
+);
+
 create or replace function public.place_pickup_order(
+  p_order_id uuid,
   p_customer_name text,
   p_customer_phone text,
   p_customer_email text,
@@ -33,9 +46,32 @@ declare
   v_menu record;
   v_qty integer;
   v_mid uuid;
+  v_existing_customer uuid;
 begin
   if v_uid is null then
     raise exception 'Not authenticated';
+  end if;
+
+  if p_order_id is null then
+    raise exception 'Missing order id';
+  end if;
+
+  -- Idempotency short-circuit: if the caller re-submits the same p_order_id
+  -- (double-click, network retry), return the existing order without any
+  -- price recomputation, profile decrement, or duplicate item inserts.
+  select customer_id, id, order_number
+    into v_existing_customer, v_order_id, v_order_number
+    from public.orders
+    where id = p_order_id;
+
+  if v_order_id is not null then
+    if v_existing_customer is distinct from v_uid then
+      raise exception 'Order id conflict';
+    end if;
+    place_pickup_order.order_id := v_order_id;
+    place_pickup_order.order_number := v_order_number;
+    return next;
+    return;
   end if;
 
   if p_payment_status is null
@@ -48,8 +84,6 @@ begin
   end if;
 
   -- === Defense-in-depth: recompute subtotal from menu_items ===
-  -- Items priced at 0 (free-drink split line) are trusted as-is but do not
-  -- contribute to the computed subtotal; the paid portion must match menu prices.
   for v_item in select * from jsonb_array_elements(p_items)
   loop
     v_qty := (v_item->>'quantity')::int;
@@ -84,8 +118,6 @@ begin
       raise exception 'Sold out: %', v_menu.name;
     end if;
 
-    -- Fallback: if price_cents is missing on a legacy row, parse a single
-    -- dollar amount from the free-text `price` field (e.g. "$5.50").
     if v_menu.price_cents is null or v_menu.price_cents <= 0 then
       if v_menu.price is not null
          and v_menu.price ~ '^\s*\$?\s*[0-9]+(\.[0-9]+)?\s*$' then
@@ -123,7 +155,6 @@ begin
       raise exception 'No free drink available to redeem';
     end if;
 
-    -- Discount = cheapest paid line already validated against menu_items above.
     select min((elem->>'unit_price_cents')::int) into v_cheapest
       from jsonb_array_elements(p_items) as elem
       where coalesce((elem->>'unit_price_cents')::int, 0) > 0;
@@ -142,17 +173,40 @@ begin
   end if;
 
   insert into public.orders (
+    id,
     customer_id, customer_name, customer_phone, customer_email,
     subtotal_cents, total_cents, discount_cents,
     pickup_time, order_notes,
     payment_status, status
   ) values (
+    p_order_id,
     v_uid, p_customer_name, p_customer_phone, p_customer_email,
     p_subtotal_cents, p_total_cents, p_discount_cents,
     p_pickup_time::timestamptz, nullif(p_order_notes, ''),
     p_payment_status::public.payment_status, 'pending'
   )
+  on conflict (id) do nothing
   returning orders.id, orders.order_number into v_order_id, v_order_number;
+
+  -- Lost the insert race (another concurrent retry won): return that row.
+  if v_order_id is null then
+    select id, order_number, customer_id
+      into v_order_id, v_order_number, v_existing_customer
+      from public.orders
+      where id = p_order_id;
+
+    if v_order_id is null then
+      raise exception 'Order could not be created';
+    end if;
+    if v_existing_customer is distinct from v_uid then
+      raise exception 'Order id conflict';
+    end if;
+
+    place_pickup_order.order_id := v_order_id;
+    place_pickup_order.order_number := v_order_number;
+    return next;
+    return;
+  end if;
 
   insert into public.order_items (order_id, menu_item_id, name, quantity, unit_price_cents, special_notes)
   select
@@ -175,9 +229,9 @@ end;
 $$;
 
 revoke execute on function public.place_pickup_order(
-  text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
+  uuid, text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
 ) from public, anon;
 
 grant execute on function public.place_pickup_order(
-  text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
+  uuid, text, text, text, integer, integer, integer, text, text, text, boolean, jsonb
 ) to authenticated;

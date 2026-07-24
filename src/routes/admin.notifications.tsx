@@ -150,7 +150,7 @@ function NotificationsPage() {
               <option value="">Select a customer…</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.full_name || c.email || c.id.slice(0, 8)}
+                  {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id.slice(0, 8)}
                 </option>
               ))}
             </select>

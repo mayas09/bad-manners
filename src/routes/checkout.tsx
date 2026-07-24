@@ -158,6 +158,7 @@ function CheckoutPage() {
 
       const result = await submitPickupOrder({
         data: {
+          orderId: crypto.randomUUID(),
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerEmail: auth.user.email ?? null,

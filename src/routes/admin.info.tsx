@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Eye, MapPin, Instagram, Facebook, Gift, Clock } from "lucide-react";
+import { Save, Eye, MapPin, Instagram, Facebook, Gift, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/admin/info")({
   component: InfoPage,
@@ -22,7 +22,6 @@ const INFO_FIELDS: { key: string; label: string }[] = [
   { key: "map_query", label: "Map search query" },
 ];
 
-type HourRow = { id: string; label: string; hours_text: string; sort_order: number };
 type DaySetting = {
   day_of_week: number;
   open_time: string;
@@ -65,7 +64,6 @@ function InfoPage() {
   }
 
   const [info, setInfo] = useState<Record<string, string>>({});
-  const [hours, setHours] = useState<HourRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState<DaySetting[]>(DEFAULT_DAYS);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -73,9 +71,8 @@ function InfoPage() {
 
   async function load() {
     setLoading(true);
-    const [infoRes, hoursRes, settingsRes] = await Promise.all([
+    const [infoRes, settingsRes] = await Promise.all([
       supabase.from("business_info").select("*"),
-      supabase.from("business_hours").select("*").order("sort_order"),
       (supabase.from as any)("business_settings").select("*").order("day_of_week"),
     ]);
     const map: Record<string, string> = {};
@@ -83,7 +80,6 @@ function InfoPage() {
       map[r.key] = r.value ?? "";
     });
     setInfo(map);
-    setHours((hoursRes.data ?? []) as HourRow[]);
     const settingsRows = (settingsRes?.data ?? []) as DaySetting[];
     if (settingsRows.length) {
       const merged = DEFAULT_DAYS.map((d) => {
@@ -123,28 +119,6 @@ function InfoPage() {
     toast.success("Loyalty milestone saved");
   }
   
-  async function addHourRow() {
-    const sort = hours.reduce((m, h) => Math.max(m, h.sort_order), 0) + 1;
-    const { error } = await supabase
-      .from("business_hours")
-      .insert({ label: "Day", hours_text: "9:00 AM – 5:00 PM", sort_order: sort });
-    if (error) return toast.error(error.message);
-    load();
-  }
-  async function saveHour(h: HourRow) {
-    const { error } = await supabase
-      .from("business_hours")
-      .update({ label: h.label, hours_text: h.hours_text, sort_order: h.sort_order })
-      .eq("id", h.id);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-  }
-  async function deleteHour(id: string) {
-    if (!confirm("Delete this row?")) return;
-    const { error } = await supabase.from("business_hours").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    setHours((hs) => hs.filter((h) => h.id !== id));
-  }
 
   async function saveSchedule() {
     const rows = days.map((d) => ({
@@ -197,58 +171,6 @@ function InfoPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-900">Hours</h2>
-            <Button size="sm" variant="outline" onClick={addHourRow}>
-              <Plus className="size-4 mr-1" /> Add
-            </Button>
-          </div>
-          <div className="mt-4 space-y-3">
-            {hours.map((h) => (
-              <div key={h.id} className="grid grid-cols-12 gap-2 items-center">
-                <Input
-                  className="col-span-4"
-                  value={h.label}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) => (x.id === h.id ? { ...x, label: e.target.value } : x)),
-                    )
-                  }
-                />
-                <Input
-                  className="col-span-5"
-                  value={h.hours_text}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) => (x.id === h.id ? { ...x, hours_text: e.target.value } : x)),
-                    )
-                  }
-                />
-                <Input
-                  className="col-span-1"
-                  type="number"
-                  value={h.sort_order}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) =>
-                        x.id === h.id ? { ...x, sort_order: Number(e.target.value) } : x,
-                      ),
-                    )
-                  }
-                />
-                <div className="col-span-2 flex gap-1 justify-end">
-                  <Button size="icon" variant="outline" onClick={() => saveHour(h)}>
-                    <Save className="size-4" />
-                  </Button>
-                  <Button size="icon" variant="outline" onClick={() => deleteHour(h.id)}>
-                    <Trash2 className="size-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
 
       <section className="bg-white rounded-2xl border border-slate-200 p-6">
@@ -357,12 +279,17 @@ function InfoPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <Clock className="size-4 mt-0.5 text-pink-700" />
-                  <span>
-                    {hours.map((h) => (
-                      <span key={h.id} className="block">
-                        <strong>{h.label}:</strong> {h.hours_text}
-                      </span>
-                    ))}
+                  <span className="space-y-0.5">
+                    {DAY_NAMES.map((name, idx) => {
+                      const d = days.find((x) => x.day_of_week === idx);
+                      if (!d) return null;
+                      return (
+                        <span key={idx} className="block">
+                          <strong>{name}:</strong>{" "}
+                          {d.is_closed ? "Closed" : `${d.open_time} – ${d.close_time}`}
+                        </span>
+                      );
+                    })}
                   </span>
                 </p>
               </div>

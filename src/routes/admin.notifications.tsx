@@ -40,7 +40,7 @@ function NotificationsPage() {
       const [{ data: profiles }, { count }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id,email,full_name")
+          .select("id,email,first_name,last_name")
           .order("created_at", { ascending: false })
           .limit(500),
         supabase.from("push_subscriptions" as any).select("id", { count: "exact", head: true }),

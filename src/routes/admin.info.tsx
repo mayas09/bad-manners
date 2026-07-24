@@ -119,28 +119,6 @@ function InfoPage() {
     toast.success("Loyalty milestone saved");
   }
   
-  async function addHourRow() {
-    const sort = hours.reduce((m, h) => Math.max(m, h.sort_order), 0) + 1;
-    const { error } = await supabase
-      .from("business_hours")
-      .insert({ label: "Day", hours_text: "9:00 AM – 5:00 PM", sort_order: sort });
-    if (error) return toast.error(error.message);
-    load();
-  }
-  async function saveHour(h: HourRow) {
-    const { error } = await supabase
-      .from("business_hours")
-      .update({ label: h.label, hours_text: h.hours_text, sort_order: h.sort_order })
-      .eq("id", h.id);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-  }
-  async function deleteHour(id: string) {
-    if (!confirm("Delete this row?")) return;
-    const { error } = await supabase.from("business_hours").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    setHours((hs) => hs.filter((h) => h.id !== id));
-  }
 
   async function saveSchedule() {
     const rows = days.map((d) => ({

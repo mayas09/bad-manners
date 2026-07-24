@@ -5,6 +5,7 @@ import { z } from "zod";
 // Client sends ONLY identifiers + quantities. Prices, discount, subtotal,
 // and total are recomputed server-side from `menu_items` to prevent tampering.
 const PickupOrderSchema = z.object({
+  orderId: z.string().uuid(),
   customerName: z.string().min(1).max(100),
   customerPhone: z.string().min(1).max(20),
   customerEmail: z.string().email().nullable().optional(),
@@ -140,6 +141,7 @@ export const placePickupOrder = createServerFn({ method: "POST" })
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: { message: string } | null }>)("place_pickup_order", {
+      p_order_id: data.orderId,
       p_customer_name: data.customerName,
       p_customer_phone: data.customerPhone,
       p_customer_email: data.customerEmail ?? null,

@@ -171,58 +171,6 @@ function InfoPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-900">Hours</h2>
-            <Button size="sm" variant="outline" onClick={addHourRow}>
-              <Plus className="size-4 mr-1" /> Add
-            </Button>
-          </div>
-          <div className="mt-4 space-y-3">
-            {hours.map((h) => (
-              <div key={h.id} className="grid grid-cols-12 gap-2 items-center">
-                <Input
-                  className="col-span-4"
-                  value={h.label}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) => (x.id === h.id ? { ...x, label: e.target.value } : x)),
-                    )
-                  }
-                />
-                <Input
-                  className="col-span-5"
-                  value={h.hours_text}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) => (x.id === h.id ? { ...x, hours_text: e.target.value } : x)),
-                    )
-                  }
-                />
-                <Input
-                  className="col-span-1"
-                  type="number"
-                  value={h.sort_order}
-                  onChange={(e) =>
-                    setHours((hs) =>
-                      hs.map((x) =>
-                        x.id === h.id ? { ...x, sort_order: Number(e.target.value) } : x,
-                      ),
-                    )
-                  }
-                />
-                <div className="col-span-2 flex gap-1 justify-end">
-                  <Button size="icon" variant="outline" onClick={() => saveHour(h)}>
-                    <Save className="size-4" />
-                  </Button>
-                  <Button size="icon" variant="outline" onClick={() => deleteHour(h.id)}>
-                    <Trash2 className="size-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
 
       <section className="bg-white rounded-2xl border border-slate-200 p-6">

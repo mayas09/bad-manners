@@ -64,7 +64,6 @@ function InfoPage() {
   }
 
   const [info, setInfo] = useState<Record<string, string>>({});
-  const [hours, setHours] = useState<HourRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState<DaySetting[]>(DEFAULT_DAYS);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -72,9 +71,8 @@ function InfoPage() {
 
   async function load() {
     setLoading(true);
-    const [infoRes, hoursRes, settingsRes] = await Promise.all([
+    const [infoRes, settingsRes] = await Promise.all([
       supabase.from("business_info").select("*"),
-      supabase.from("business_hours").select("*").order("sort_order"),
       (supabase.from as any)("business_settings").select("*").order("day_of_week"),
     ]);
     const map: Record<string, string> = {};
@@ -82,7 +80,6 @@ function InfoPage() {
       map[r.key] = r.value ?? "";
     });
     setInfo(map);
-    setHours((hoursRes.data ?? []) as HourRow[]);
     const settingsRows = (settingsRes?.data ?? []) as DaySetting[];
     if (settingsRows.length) {
       const merged = DEFAULT_DAYS.map((d) => {

@@ -215,6 +215,7 @@ function AccountHome() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-10">
+        <PushOptInBanner userId={auth.user.id} />
         <section className="flex flex-wrap gap-3">
           <Link
             to="/account/events"

@@ -5,6 +5,7 @@ import { z } from "zod";
 // Client sends ONLY identifiers + quantities. Prices, discount, subtotal,
 // and total are recomputed server-side from `menu_items` to prevent tampering.
 const PickupOrderSchema = z.object({
+  orderId: z.string().uuid(),
   customerName: z.string().min(1).max(100),
   customerPhone: z.string().min(1).max(20),
   customerEmail: z.string().email().nullable().optional(),

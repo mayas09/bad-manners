@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { useAdminAuth } from "@/lib/use-admin-auth";
 import { cancelOrderWithRefund } from "@/lib/checkout.functions";
+import { sendPushNotification } from "@/lib/push-send.functions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ShoppingBag, Volume2, VolumeX } from "lucide-react";
@@ -188,6 +189,19 @@ function OrdersPage() {
         .from("notifications")
         .insert({ customer_id: o.customer_id, order_id: o.id, message });
       if (notifyError) console.error("Failed to send order notification:", notifyError.message);
+      try {
+        await sendPushNotification({
+          data: {
+            userId: o.customer_id,
+            title: `Order #${o.order_number}`,
+            body: message,
+            url: `/account/receipt/${o.id}`,
+            tag: `order-${o.id}`,
+          },
+        });
+      } catch (err) {
+        console.error("Failed to send push notification:", err);
+      }
     }
   }
 

@@ -14,6 +14,7 @@ import {
   LogOut,
   ExternalLink,
   BarChart3,
+  Bell,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -28,6 +29,7 @@ const NAV = [
   { to: "/admin/info", label: "Business Info", icon: Settings, exact: false },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, exact: false },
   { to: "/admin/events", label: "Events", icon: CalendarHeart, exact: false },
+  { to: "/admin/notifications", label: "Notifications", icon: Bell, exact: false },
 ] as const;
 
 function AdminLayout() {

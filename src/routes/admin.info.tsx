@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminAuth } from "@/lib/use-admin-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,22 +46,6 @@ function normalizeTime(t: string): string {
 
 
 function InfoPage() {
-  const admin = useAdminAuth();
-
-  if (!admin.isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="mt-2 text-slate-600">You must be an admin to view this page.</p>
-          <a href="/" className="mt-4 inline-block text-blue-600 underline">
-            Go to homepage
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   const [info, setInfo] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState<DaySetting[]>(DEFAULT_DAYS);

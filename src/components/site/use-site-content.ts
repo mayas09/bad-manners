@@ -117,13 +117,15 @@ export function useSiteContent(): SiteContent {
       const [m, i, h, img, secRes] = await Promise.all([
         supabase.from("menu_items").select("*").order("section").order("sort_order"),
         supabase.from("business_info").select("*"),
-        supabase.from("business_hours").select("*").order("sort_order"),
+        (supabase.from as any)("business_settings")
+          .select("day_of_week,open_time,close_time,is_closed")
+          .order("day_of_week"),
         supabase.from("site_images").select("*").order("category").order("sort_order"),
         supabase.from("menu_sections" as any).select("*").order("sort_order"),
       ]);
       if (cancelled) return;
 
-      if (m.error || i.error || h.error || img.error) {
+      if (m.error || i.error || img.error) {
         console.error(
           "Site content load error:",
           m.error,
